@@ -1,20 +1,36 @@
 # Air Quality Monitoring and Data Platform
 
 ## Project Goal
-This project builds a small data pipeline for air quality data. It collects, cleans, analyzes, and summarizes pollution data so that the results can be used for trend monitoring and further analytics work.
+This project builds a small data pipeline for air quality data using an API-based ingestion process. It automatically collects, cleans, and analyzes pollution data to support trend monitoring and basic insights.
 
 ## Tech Stack
 - Python
 - pandas
 - Jupyter Notebook
 - Matplotlib
+- REST API (MOENV Open Data)
 
 ## Project Structure
-- `data/raw/`: original data
+- `data/raw/`: raw data (optional fallback)
 - `data/processed/`: cleaned data
-- `notebooks/`: exploration notebook
-- `src/`: reusable scripts
-- `output/`: figures and summary tables
+- `notebooks/`: data exploration and validation
+- `src/`: reusable pipeline scripts
+- `output/`: analysis results (tables, figures)
 
 ## Current Stage
-MVP version: data loading, cleaning, aggregation, and basic visualization.
+MVP: API ingestion → data cleaning → aggregation → basic analysis
+
+---
+
+## Example Analysis: Average AQI by County
+
+This analysis computes the average AQI for each county and ranks regions by pollution level.
+
+Top results:
+
+- 南投縣: 89  
+- 臺南市: 62  
+- 屏東縣: 53  
+- 新北市: 41
+
+The results are automatically generated from the API-based pipeline and saved as structured output files.
