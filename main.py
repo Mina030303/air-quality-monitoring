@@ -9,6 +9,8 @@ from src.analyze_data import (
     daily_avg_aqi,
     avg_aqi_by_county,
     high_pollution_hours,
+    high_pollution_hour_ratio,
+    high_pollution_hour_ratio_by_county,
     time_structure_analysis,
     current_status_interpretation,
 )
@@ -32,12 +34,16 @@ def main():
     trend_df = daily_avg_aqi(hourly_clean)
     county_df = avg_aqi_by_county(hourly_clean)
     risk_df = high_pollution_hours(hourly_clean)
+    hour_ratio_df = high_pollution_hour_ratio(hourly_clean)
+    hour_ratio_county_df = high_pollution_hour_ratio_by_county(hourly_clean)
     time_daily_df, weekday_vs_weekend_df, monthly_avg_df = time_structure_analysis(hourly_clean)
     status_text = current_status_interpretation(trend_df)
 
     save_csv(trend_df, BASE_DIR / "output/tables/daily_trend.csv")
     save_csv(county_df, BASE_DIR / "output/tables/county_avg.csv")
     save_csv(risk_df, BASE_DIR / "output/tables/high_pollution_hours.csv")
+    save_csv(hour_ratio_df, BASE_DIR / "output/tables/high_pollution_hour_ratio.csv")
+    save_csv(hour_ratio_county_df, BASE_DIR / "output/tables/high_pollution_hour_ratio_by_county.csv")
     save_csv(time_daily_df, BASE_DIR / "output/tables/daily_time_structure.csv")
     save_csv(weekday_vs_weekend_df, BASE_DIR / "output/tables/weekday_vs_weekend.csv")
     save_csv(monthly_avg_df, BASE_DIR / "output/tables/monthly_avg.csv")

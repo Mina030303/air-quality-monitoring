@@ -85,6 +85,89 @@ def high_pollution_hours(hourly_df: pd.DataFrame) -> pd.DataFrame:
     return result
 
 
+def high_pollution_hour_ratio(hourly_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Calculates the ratio of high pollution (AQI > 100) records for each hour of the day.
+    Outputs: hour, total_count, high_pollution_count, high_pollution_ratio
+    """
+    df = hourly_df.copy()
+    
+    # Ensure datacreationdate is datetime and aqi is numeric
+    df["datacreationdate"] = pd.to_datetime(df["datacreationdate"], errors="coerce")
+    df["aqi"] = pd.to_numeric(df["aqi"], errors="coerce")
+    
+    # Drop rows with missing datetime or aqi
+    df = df.dropna(subset=["datacreationdate", "aqi"])
+    
+    # Extract hour
+    df["hour"] = df["datacreationdate"].dt.hour
+    
+    # Calculate total records per hour
+    total_counts = df.groupby("hour").size().reset_index(name="total_count")
+    
+    # Calculate high pollution records per hour
+    high_pol = df[df["aqi"] > 100]
+    high_counts = high_pol.groupby("hour").size().reset_index(name="high_pollution_count")
+    
+    # Merge and fill missing high pollution counts with 0, then cast both to int
+    result = total_counts.merge(high_counts, on="hour", how="left")
+    result["high_pollution_count"] = result["high_pollution_count"].fillna(0).astype(int)
+    result["total_count"] = result["total_count"].astype(int)
+    
+    # Calculate ratio safely to prevent division by zero
+    result["high_pollution_ratio"] = 0.0
+    mask = result["total_count"] > 0
+    result.loc[mask, "high_pollution_ratio"] = result.loc[mask, "high_pollution_count"] / result.loc[mask, "total_count"]
+    
+    # Sort primarily by hour
+    result = result.sort_values("hour").reset_index(drop=True)
+    
+    return result[["hour", "total_count", "high_pollution_count", "high_pollution_ratio"]]
+
+
+def high_pollution_hour_ratio_by_county(hourly_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Calculates the ratio of high pollution (AQI > 100) records for each hour, grouped by county.
+    Outputs: county, hour, total_count, high_pollution_count, high_pollution_ratio
+    """
+    df = hourly_df.copy()
+    
+    # Ensure datacreationdate is datetime and aqi is numeric
+    df["datacreationdate"] = pd.to_datetime(df["datacreationdate"], errors="coerce")
+    df["aqi"] = pd.to_numeric(df["aqi"], errors="coerce")
+    
+    # Drop rows with missing datetime, aqi, or county
+    df = df.dropna(subset=["datacreationdate", "aqi", "county"])
+    
+    # Extract hour
+    df["hour"] = df["datacreationdate"].dt.hour
+    
+    # Calculate total records per county and hour
+    total_counts = df.groupby(["county", "hour"]).size().reset_index(name="total_count")
+    
+    # Calculate high pollution records per county and hour
+    high_pol = df[df["aqi"] > 100]
+    high_counts = high_pol.groupby(["county", "hour"]).size().reset_index(name="high_pollution_count")
+    
+    # Merge and fill missing high pollution counts with 0, then cast both to int
+    result = total_counts.merge(high_counts, on=["county", "hour"], how="left")
+    result["high_pollution_count"] = result["high_pollution_count"].fillna(0).astype(int)
+    result["total_count"] = result["total_count"].astype(int)
+    
+    # Calculate ratio safely to prevent division by zero
+    result["high_pollution_ratio"] = 0.0
+    mask = result["total_count"] > 0
+    result.loc[mask, "high_pollution_ratio"] = result.loc[mask, "high_pollution_count"] / result.loc[mask, "total_count"]
+    
+    # Sort primarily by county, then by hour
+    result = result.sort_values(["county", "hour"]).reset_index(drop=True)
+    
+    return result[["county", "hour", "total_count", "high_pollution_count", "high_pollution_ratio"]]
+    result = result.sort_values(["county", "hour"]).reset_index(drop=True)
+    
+    return result
+
+
 # ---------- 4. 時間結構分析（日、週末、月份） ----------
 
 def time_structure_analysis(
