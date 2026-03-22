@@ -10,6 +10,7 @@ from src.analyze_data import (
     avg_aqi_by_county,
     high_pollution_hours,
     time_structure_analysis,
+    current_status_interpretation,
 )
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -32,6 +33,7 @@ def main():
     county_df = avg_aqi_by_county(hourly_clean)
     risk_df = high_pollution_hours(hourly_clean)
     time_daily_df, weekday_vs_weekend_df, monthly_avg_df = time_structure_analysis(hourly_clean)
+    status_text = current_status_interpretation(trend_df)
 
     save_csv(trend_df, BASE_DIR / "output/tables/daily_trend.csv")
     save_csv(county_df, BASE_DIR / "output/tables/county_avg.csv")

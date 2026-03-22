@@ -34,6 +34,38 @@ def avg_aqi_by_county(hourly_df: pd.DataFrame) -> pd.DataFrame:
     return result
 
 
+# ---------- 2.5 縣市穩定性 vs 波動度 ----------
+
+def analyze_county_stability(hourly_df: pd.DataFrame) -> pd.DataFrame:
+    df = hourly_df.copy()
+
+    # Calculate metrics per county
+    grouped = df.groupby("county")["aqi"]
+    
+    metrics = grouped.agg(
+        mean_aqi="mean",
+        std_aqi="std",
+        total_count="count",
+    ).reset_index()
+
+    # Calculate high pollution count safely (aqi > 100)
+    high_pol_counts = df[df["aqi"] > 100].groupby("county").size().reset_index(name="high_pollution_count")
+    
+    # Merge and fillna for counties with 0 high pollution events
+    result = metrics.merge(high_pol_counts, on="county", how="left")
+    result["high_pollution_count"] = result["high_pollution_count"].fillna(0)
+    
+    # Calculate ratio
+    result["high_pollution_ratio"] = result["high_pollution_count"] / result["total_count"]
+    
+    # Calculate ranks (dense descending)
+    result["mean_rank"] = result["mean_aqi"].rank(ascending=False, method="min").astype(int)
+    result["volatility_rank"] = result["std_aqi"].rank(ascending=False, method="min").astype(int)
+    result["high_pollution_rank"] = result["high_pollution_count"].rank(ascending=False, method="min").astype(int)
+    result["high_pollution_ratio_rank"] = result["high_pollution_ratio"].rank(ascending=False, method="min").astype(int)
+
+    return result.sort_values("mean_rank")
+
 # ---------- 3. 高污染時段（AQI > 100） ----------
 
 def high_pollution_hours(hourly_df: pd.DataFrame) -> pd.DataFrame:
@@ -91,3 +123,37 @@ def time_structure_analysis(
     daily_df = daily_df[["date", "avg_aqi", "rolling_7d_avg"]]
 
     return daily_df, weekday_vs_weekend_df, monthly_avg_df
+
+# ---------- 5. 目前狀態判讀 ----------
+
+def current_status_interpretation(daily_df: pd.DataFrame) -> str:
+    df = daily_df.copy()
+
+    if df.empty or len(df) < 2:
+        return "status_insufficient_data"
+
+    df = df.sort_values("date").reset_index(drop=True)
+
+    latest = df.iloc[-1]
+    previous = df.iloc[-2]
+
+    latest_aqi = latest["avg_aqi"]
+    latest_rolling = latest["rolling_7d_avg"]
+    previous_rolling = previous["rolling_7d_avg"]
+
+    if latest_aqi >= 100 and latest_rolling >= 80:
+        return "status_sustained_pollution"
+
+    if latest_aqi - latest_rolling >= 15:
+        return "status_short_term_spike"
+
+    if latest_rolling < previous_rolling - 3:
+        return "status_improving_trend"
+
+    if abs(latest_aqi - latest_rolling) < 10 and abs(latest_rolling - previous_rolling) < 3:
+        return "status_normal_variation"
+
+    if latest_rolling > previous_rolling:
+        return "status_worsening_trend"
+
+    return "status_normal_variation"
