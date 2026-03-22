@@ -53,4 +53,20 @@ with col3:
     if st.button(t("home_button_hours"), key="home_btn_hours", use_container_width=True):
         st.switch_page("pages/high_pollution_hours.py")
 
+st.markdown('<br>', unsafe_allow_html=True)
+col4, col5, col6 = st.columns(3)
+
+with col4:
+    st.markdown(
+        f"""
+        <div class="custom-card">
+            <div class="card-title">{t("spike_title")}</div>
+            <div class="card-text">{t("spike_desc")}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    if st.button(t("home_button_spike"), key="home_btn_spike", use_container_width=True):
+        st.switch_page("pages/spike_detection.py")
+
 st.markdown("</div>", unsafe_allow_html=True)

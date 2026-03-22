@@ -240,3 +240,122 @@ def current_status_interpretation(daily_df: pd.DataFrame) -> str:
         return "status_worsening_trend"
 
     return "status_normal_variation"
+
+
+# ---------- 6. 異常污染飆高 (Spike) 偵測 ----------
+
+def detect_pollution_spikes(
+    df: pd.DataFrame,
+    pollutant_col: str,
+    site_col: str = "sitename",
+    time_col: str = "datacreationdate",
+    county_col: str = "county",
+    method: str = "rolling_threshold",
+    rolling_window: int = 24,
+    threshold_ratio: float = 1.5,
+    zscore_threshold: float = 2.5,
+    min_value: float = 0.0
+) -> pd.DataFrame:
+    """
+    Detect abnormal high-pollution events (spikes) in air quality time series.
+    Uses strict look-ahead bias avoidance.
+    """
+    result_df = df.copy()
+    
+    # Validation & Cleaning
+    result_df[time_col] = pd.to_datetime(result_df[time_col], errors="coerce")
+    result_df[pollutant_col] = pd.to_numeric(result_df[pollutant_col], errors="coerce")
+    result_df = result_df.dropna(subset=[pollutant_col, time_col])
+    
+    # Sort for robust time series calculations
+    result_df = result_df.sort_values(by=[site_col, time_col]).reset_index(drop=True)
+    
+    # Initialize metric arrays
+    baseline_list = []
+    zscore_list = []
+    spike_flag_list = []
+    spike_strength_list = []
+    
+    # Process GroupBy avoiding SettingWithCopyWarning
+    for site, group in result_df.groupby(site_col):
+        values = group[pollutant_col]
+        
+        # Calculate past expanding mean
+        expanding_mean_past = values.expanding().mean().shift(1)
+        
+        if method == "rolling_threshold":
+            # Calculate past rolling mean
+            rolling_mean_past = values.rolling(window=rolling_window, min_periods=1).mean().shift(1)
+            
+            # Fill NaNs with past expanding mean, clip to 0.1 to avoid DivisionByZero
+            baseline = rolling_mean_past.fillna(expanding_mean_past).clip(lower=0.1)
+            
+            # Calculate ratios and logic
+            ratio = values / baseline
+            is_spike = (ratio > threshold_ratio) & (values >= min_value)
+            
+            strength = values - baseline
+            z_score = pd.Series([pd.NA] * len(values), index=values.index)
+            
+        elif method == "zscore":
+            expanding_std_past = values.expanding().std().shift(1)
+            
+            # Fallback for STD 0
+            expanding_std_past = expanding_std_past.replace(0, 1.0).fillna(1.0)
+            baseline = expanding_mean_past.clip(lower=0.1)
+            
+            z_score = (values - baseline) / expanding_std_past
+            is_spike = (z_score > zscore_threshold) & (values >= min_value)
+            
+            strength = values - baseline
+            
+        baseline_list.extend(baseline.tolist())
+        zscore_list.extend(z_score.tolist())
+        spike_flag_list.extend(is_spike.tolist())
+        spike_strength_list.extend(strength.tolist())
+        
+    result_df["baseline"] = baseline_list
+    result_df["z_score"] = zscore_list
+    result_df["spike_flag"] = spike_flag_list
+    result_df["spike_strength"] = spike_strength_list
+
+    spikes = result_df[result_df["spike_flag"]].copy()
+    cols_to_keep = [time_col, site_col, county_col, pollutant_col, "baseline", "z_score", "spike_strength"]
+    return spikes[cols_to_keep].sort_values(by=time_col, ascending=False).reset_index(drop=True)
+
+# ---------- 7. 異常污染飆高 Summaries ----------
+
+def spike_summary_by_county(spike_df: pd.DataFrame) -> pd.DataFrame:
+    if spike_df.empty:
+        return pd.DataFrame(columns=["county", "spike_count", "avg_spike_strength", "max_spike_strength"])
+        
+    summary = spike_df.groupby("county").agg(
+        spike_count=("sitename", "count"),
+        avg_spike_strength=("spike_strength", "mean"),
+        max_spike_strength=("spike_strength", "max")
+    ).reset_index()
+    return summary.sort_values(by="spike_count", ascending=False).reset_index(drop=True)
+
+def spike_summary_by_site(spike_df: pd.DataFrame) -> pd.DataFrame:
+    if spike_df.empty:
+        return pd.DataFrame(columns=["sitename", "county", "spike_count", "avg_spike_strength", "max_spike_strength"])
+        
+    summary = spike_df.groupby(["sitename", "county"]).agg(
+        spike_count=("sitename", "count"),
+        avg_spike_strength=("spike_strength", "mean"),
+        max_spike_strength=("spike_strength", "max")
+    ).reset_index()
+    return summary.sort_values(by="spike_count", ascending=False).reset_index(drop=True)
+
+def spike_time_pattern(spike_df: pd.DataFrame, time_col: str = "datacreationdate") -> pd.DataFrame:
+    if spike_df.empty:
+        return pd.DataFrame(columns=["hour", "spike_count"])
+        
+    df = spike_df.copy()
+    df[time_col] = pd.to_datetime(df[time_col], errors="coerce")
+    df["hour"] = df[time_col].dt.hour
+    
+    summary = df.groupby("hour").agg(
+        spike_count=("sitename", "count")
+    ).reset_index()
+    return summary.sort_values(by="hour").reset_index(drop=True)

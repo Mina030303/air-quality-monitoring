@@ -13,6 +13,10 @@ from src.analyze_data import (
     high_pollution_hour_ratio_by_county,
     time_structure_analysis,
     current_status_interpretation,
+    detect_pollution_spikes,
+    spike_summary_by_county,
+    spike_summary_by_site,
+    spike_time_pattern
 )
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -47,6 +51,28 @@ def main():
     save_csv(time_daily_df, BASE_DIR / "output/tables/daily_time_structure.csv")
     save_csv(weekday_vs_weekend_df, BASE_DIR / "output/tables/weekday_vs_weekend.csv")
     save_csv(monthly_avg_df, BASE_DIR / "output/tables/monthly_avg.csv")
+
+    # ----- 異常污染飆高 (Spike Detection) -----
+    print("Running spike detection...")
+    # Defaulting to AQI for main pipeline overview
+    spikes_df = detect_pollution_spikes(
+        hourly_clean, 
+        pollutant_col="aqi",
+        method="rolling_threshold",
+        rolling_window=24,
+        threshold_ratio=1.5,
+        zscore_threshold=2.5,
+        min_value=50.0  # Optional minimum constraint for meaningful spikes
+    )
+    
+    spike_county_df = spike_summary_by_county(spikes_df)
+    spike_site_df = spike_summary_by_site(spikes_df)
+    spike_hour_df = spike_time_pattern(spikes_df)
+    
+    save_csv(spikes_df, BASE_DIR / "output/tables/pollution_spikes.csv")
+    save_csv(spike_county_df, BASE_DIR / "output/tables/spike_by_county.csv")
+    save_csv(spike_site_df, BASE_DIR / "output/tables/spike_by_site.csv")
+    save_csv(spike_hour_df, BASE_DIR / "output/tables/spike_by_hour.csv")
 
     print("update done")
 

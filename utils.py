@@ -44,6 +44,7 @@ def render_global_sidebar(current_page: str):
         ("pages/trend.py", t("trend")),
         ("pages/county_analysis.py", t("county")),
         ("pages/high_pollution_hours.py", t("hours")),
+        ("pages/spike_detection.py", t("spike_title")),
     ]
 
     for page_path, label in pages:
@@ -151,25 +152,24 @@ def apply_style():
         }
 
         /* 把語言選單固定到右上角，避免被 header 蓋住 */
-        div[data-testid="stSelectbox"] {
+        .st-key-global_lang_select {
             position: fixed !important;
             top: 4.2rem !important;
             right: 5rem !important;
-            width: 110px !important;   /* 再縮短 */
+            width: 110px !important;
             z-index: 99999 !important;
             margin: 0 !important;
         }
 
-        /* 外框 */
-        div[data-baseweb="select"] {
+        /* 語言選單的內部樣式 */
+        .st-key-global_lang_select div[data-baseweb="select"] {
             min-width: 100px !important;
             cursor: pointer !important;          /* 滑鼠變手指 */
             position: relative !important;
             z-index: 99999 !important;
         }
 
-        /* 主體 */
-        div[data-baseweb="select"] > div {
+        .st-key-global_lang_select div[data-baseweb="select"] > div {
             min-height: 34px !important;
             height: 34px !important;
             border-radius: 10px !important;
@@ -180,14 +180,36 @@ def apply_style():
             cursor: pointer !important;
         }
 
-        /* 文字 */
-        div[data-baseweb="select"] span {
+        .st-key-global_lang_select div[data-baseweb="select"] span {
             font-size: 14px !important;
             cursor: pointer !important;
         }
 
-        /* hover */
-        div[data-baseweb="select"]:hover > div {
+        .st-key-global_lang_select div[data-baseweb="select"]:hover > div {
+            border-color: #9fb8cf !important;
+            background: #f6f9fc !important;
+        }
+
+        /* 縣市 filter 樣式 (白底藍框，與語言選單一致) */
+        .st-key-hours_county_select div[data-baseweb="select"] > div,
+        .st-key-spike_pollutant_select div[data-baseweb="select"] > div,
+        .st-key-spike_method_select div[data-baseweb="select"] > div,
+        .st-key-spike_county_select div[data-baseweb="select"] > div {
+            border-radius: 10px !important;
+            border: 1px solid #c9d7e3 !important;
+            background: #ffffff !important;
+            box-shadow: none !important;
+        }
+
+        /* hover 或點擊時維持與語言選單相同效果 */
+        .st-key-hours_county_select div[data-baseweb="select"]:hover > div,
+        .st-key-hours_county_select div[data-baseweb="select"]:focus-within > div,
+        .st-key-spike_pollutant_select div[data-baseweb="select"]:hover > div,
+        .st-key-spike_pollutant_select div[data-baseweb="select"]:focus-within > div,
+        .st-key-spike_method_select div[data-baseweb="select"]:hover > div,
+        .st-key-spike_method_select div[data-baseweb="select"]:focus-within > div,
+        .st-key-spike_county_select div[data-baseweb="select"]:hover > div,
+        .st-key-spike_county_select div[data-baseweb="select"]:focus-within > div {
             border-color: #9fb8cf !important;
             background: #f6f9fc !important;
         }
