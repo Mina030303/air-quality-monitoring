@@ -1,6 +1,11 @@
 import streamlit as st
 import altair as alt
 import pandas as pd
+from pathlib import Path
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from utils import apply_style, render_global_sidebar, load_data, load_raw_data, cached_analyze_county_stability, t
 
 apply_style()
