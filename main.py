@@ -16,7 +16,8 @@ from src.analyze_data import (
     detect_pollution_spikes,
     spike_summary_by_county,
     spike_summary_by_site,
-    spike_time_pattern
+    spike_time_pattern,
+    calculate_county_risk_score
 )
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -41,7 +42,7 @@ def main():
     hour_ratio_df = high_pollution_hour_ratio(hourly_clean)
     hour_ratio_county_df = high_pollution_hour_ratio_by_county(hourly_clean)
     time_daily_df, weekday_vs_weekend_df, monthly_avg_df = time_structure_analysis(hourly_clean)
-    status_text = current_status_interpretation(trend_df)
+    status_text = current_status_interpretation(time_daily_df)
 
     save_csv(trend_df, BASE_DIR / "output/tables/daily_trend.csv")
     save_csv(county_df, BASE_DIR / "output/tables/county_avg.csv")
@@ -51,6 +52,12 @@ def main():
     save_csv(time_daily_df, BASE_DIR / "output/tables/daily_time_structure.csv")
     save_csv(weekday_vs_weekend_df, BASE_DIR / "output/tables/weekday_vs_weekend.csv")
     save_csv(monthly_avg_df, BASE_DIR / "output/tables/monthly_avg.csv")
+
+    # ----- 縣市風險分析 (County Risk) -----
+    print("Calculating county risk scores...")
+    county_risk_df = calculate_county_risk_score(hourly_clean)
+    save_csv(county_risk_df, BASE_DIR / "output/tables/county_risk_score.csv")
+
 
     # ----- 異常污染飆高 (Spike Detection) -----
     print("Running spike detection...")

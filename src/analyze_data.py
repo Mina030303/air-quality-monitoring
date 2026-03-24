@@ -66,6 +66,95 @@ def analyze_county_stability(hourly_df: pd.DataFrame) -> pd.DataFrame:
 
     return result.sort_values("mean_rank")
 
+
+# ---------- 2.6 縣市風險分數 (County Risk) ----------
+
+def calculate_county_risk_score(hourly_df: pd.DataFrame) -> pd.DataFrame:
+    df = hourly_df.copy()
+
+    grouped = df.groupby("county")["aqi"]
+    metrics = grouped.agg(
+        mean_aqi="mean",
+        std_aqi="std",
+        total_count="count",
+    ).reset_index()
+
+    high_pol_counts = df[df["aqi"] > 100].groupby("county").size().reset_index(name="high_pollution_count")
+    
+    result = metrics.merge(high_pol_counts, on="county", how="left")
+    result["high_pollution_count"] = result["high_pollution_count"].fillna(0)
+    result["high_pollution_ratio"] = result["high_pollution_count"] / result["total_count"]
+    
+    result["std_aqi"] = result["std_aqi"].fillna(0)
+    
+    # 建立 CV (變異係數, Coefficient of Variation) 來解耦平均值與波動度
+    result["cv_aqi"] = result["std_aqi"] / result["mean_aqi"]
+    
+    def normalize(series):
+        s_min, s_max = series.min(), series.max()
+        return (series - s_min) / (s_max - s_min) if s_max > s_min else series * 0.0
+
+    result["mean_aqi_norm"] = normalize(result["mean_aqi"])
+    result["cv_aqi_norm"] = normalize(result["cv_aqi"])
+
+    # Base Score: 50% 絕對長期濃度 + 50% 相對波動度 (消除共線性)
+    base_score = result["mean_aqi_norm"] * 0.5 + result["cv_aqi_norm"] * 0.5
+    
+    # Penalty Multiplier: 高污染發生率作為極端懲罰加乘
+    raw_risk = base_score * (1.0 + result["high_pollution_ratio"])
+
+    # 將最終結果常態化成 0~100 分
+    result["risk_score"] = normalize(raw_risk) * 100.0
+    
+    result["risk_rank"] = result["risk_score"].rank(ascending=False, method="min").astype(int)
+    
+    final_cols = ["county", "mean_aqi", "std_aqi", "high_pollution_ratio", "cv_aqi", "risk_score", "risk_rank"]
+    return result[final_cols].sort_values("risk_score", ascending=False)
+
+# ---------- 2.6 縣市風險分數 (County Risk) ----------
+
+def calculate_county_risk_score(hourly_df: pd.DataFrame) -> pd.DataFrame:
+    df = hourly_df.copy()
+
+    grouped = df.groupby("county")["aqi"]
+    metrics = grouped.agg(
+        mean_aqi="mean",
+        std_aqi="std",
+        total_count="count",
+    ).reset_index()
+
+    high_pol_counts = df[df["aqi"] > 100].groupby("county").size().reset_index(name="high_pollution_count")
+    
+    result = metrics.merge(high_pol_counts, on="county", how="left")
+    result["high_pollution_count"] = result["high_pollution_count"].fillna(0)
+    result["high_pollution_ratio"] = result["high_pollution_count"] / result["total_count"]
+    
+    result["std_aqi"] = result["std_aqi"].fillna(0)
+    
+    # 建立 CV (變異係數, Coefficient of Variation) 來解耦平均值與波動度
+    result["cv_aqi"] = result["std_aqi"] / result["mean_aqi"]
+    
+    def normalize(series):
+        s_min, s_max = series.min(), series.max()
+        return (series - s_min) / (s_max - s_min) if s_max > s_min else series * 0.0
+
+    result["mean_aqi_norm"] = normalize(result["mean_aqi"])
+    result["cv_aqi_norm"] = normalize(result["cv_aqi"])
+
+    # Base Score: 50% 絕對長期濃度 + 50% 相對波動度 (消除共線性)
+    base_score = result["mean_aqi_norm"] * 0.5 + result["cv_aqi_norm"] * 0.5
+    
+    # Penalty Multiplier: 高污染發生率作為極端懲罰加乘
+    raw_risk = base_score * (1.0 + result["high_pollution_ratio"])
+
+    # 將最終結果常態化成 0~100 分
+    result["risk_score"] = normalize(raw_risk) * 100.0
+    
+    result["risk_rank"] = result["risk_score"].rank(ascending=False, method="min").astype(int)
+    
+    final_cols = ["county", "mean_aqi", "std_aqi", "high_pollution_ratio", "cv_aqi", "risk_score", "risk_rank"]
+    return result[final_cols].sort_values("risk_score", ascending=False)
+
 # ---------- 3. 高污染時段（AQI > 100） ----------
 
 def high_pollution_hours(hourly_df: pd.DataFrame) -> pd.DataFrame:

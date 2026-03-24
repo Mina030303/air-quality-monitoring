@@ -42,7 +42,8 @@ def render_global_sidebar(current_page: str):
     pages = [
         ("app.py", t("home_menu")),
         ("pages/trend.py", t("trend")),
-        ("pages/county_analysis.py", t("county")),
+        ("pages/county_analysis.py", t("county_overview_title")),
+        ("pages/county_risk.py", t("county_risk_title")),
         ("pages/high_pollution_hours.py", t("hours")),
         ("pages/spike_detection.py", t("spike_title")),
     ]

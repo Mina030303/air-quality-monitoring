@@ -15,7 +15,7 @@ mean_sorted = stability_df.sort_values("mean_aqi", ascending=False)
 std_sorted = stability_df.sort_values("std_aqi", ascending=False)
 ratio_sorted = stability_df.sort_values("high_pollution_ratio", ascending=False)
 
-st.title(t("county_stability_title"))
+st.title(t("county_overview_title"))
 
 st.markdown(
     f"""
@@ -256,109 +256,3 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.markdown("---")
-
-base_axis = alt.Axis(
-    labelAngle=-60,
-    labelPadding=8,
-    titlePadding=10,
-)
-
-st.markdown(f"**{t('county_chart_mean_title')}**")
-st.caption(t("county_chart_mean_desc"))
-
-mean_sorted = mean_sorted.copy()
-mean_sorted["aqi_band"] = pd.cut(
-    mean_sorted["mean_aqi"],
-    bins=[0, 50, 100, 120],
-    labels=["Good", "Moderate", "Polluted"],
-    include_lowest=True,
-)
-
-mean_chart = (
-    alt.Chart(mean_sorted)
-    .mark_bar(cornerRadiusTopLeft=3, cornerRadiusTopRight=3)
-    .encode(
-        x=alt.X("county:N", sort=None, title=t("county"), axis=base_axis),
-        y=alt.Y(
-            "mean_aqi:Q",
-            title=t("county_mean_aqi"),
-            scale=alt.Scale(domain=[0, 120]),
-        ),
-        color=alt.Color(
-            "aqi_band:N",
-            title=t("aqi_value_label"),
-            scale=alt.Scale(
-                domain=["Good", "Moderate", "Polluted"],
-                range=["#6fbf73", "#e6d36f", "#f4a259"],
-            ),
-            legend=alt.Legend(
-                orient="right",
-                symbolType="square",
-                titlePadding=10,
-                labelPadding=6,
-                offset=12,
-            ),
-        ),
-        tooltip=[
-            alt.Tooltip("county:N", title=t("county")),
-            alt.Tooltip("mean_aqi:Q", title=t("county_mean_aqi"), format=".2f"),
-            alt.Tooltip("mean_rank:Q", title=t("county_mean_rank")),
-        ],
-    )
-    .properties(height=280)
-    .configure_axis(grid=True, gridColor="#d8e2ec")
-    .configure_view(strokeWidth=0, fill="transparent")
-    .configure(background="transparent")
-)
-st.altair_chart(mean_chart, use_container_width=True)
-
-st.markdown("---")
-
-st.markdown(f"**{t('county_chart_std_title')}**")
-st.caption(t("county_chart_std_desc"))
-std_chart = (
-    alt.Chart(std_sorted)
-    .mark_bar(color="#5a8dee", cornerRadiusTopLeft=3, cornerRadiusTopRight=3)
-    .encode(
-        x=alt.X("county:N", sort=None, title=t("county"), axis=base_axis),
-        y=alt.Y("std_aqi:Q", title=t("county_std_aqi")),
-        tooltip=[
-            alt.Tooltip("county:N", title=t("county")),
-            alt.Tooltip("std_aqi:Q", title=t("county_std_aqi"), format=".2f"),
-            alt.Tooltip("volatility_rank:Q", title=t("county_std_rank")),
-        ],
-    )
-    .properties(height=280)
-    .configure_axis(grid=True, gridColor="#d8e2ec")
-    .configure_view(strokeWidth=0, fill="transparent")
-    .configure(background="transparent")
-)
-st.altair_chart(std_chart, use_container_width=True)
-
-st.markdown("---")
-
-st.markdown(f"**{t('county_chart_ratio_title')}**")
-st.caption(t("county_chart_ratio_desc"))
-ratio_chart = (
-    alt.Chart(ratio_sorted)
-    .mark_bar(color="#ff9f43", cornerRadiusTopLeft=3, cornerRadiusTopRight=3)
-    .encode(
-        x=alt.X("county:N", sort=None, title=t("county"), axis=base_axis),
-        y=alt.Y(
-            "high_pollution_ratio:Q",
-            title=t("county_high_pol_ratio"),
-            axis=alt.Axis(format="%"),
-        ),
-        tooltip=[
-            alt.Tooltip("county:N", title=t("county")),
-            alt.Tooltip("high_pollution_ratio:Q", title=t("county_high_pol_ratio"), format=".2%"),
-            alt.Tooltip("high_pollution_ratio_rank:Q", title=t("county_ratio_rank")),
-        ],
-    )
-    .properties(height=280)
-    .configure_axis(grid=True, gridColor="#d8e2ec")
-    .configure_view(strokeWidth=0, fill="transparent")
-    .configure(background="transparent")
-)
-st.altair_chart(ratio_chart, use_container_width=True)
