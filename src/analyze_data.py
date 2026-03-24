@@ -1,12 +1,15 @@
 from __future__ import annotations
 import pandas as pd
+import numpy as np
 
 
 # ---------- 1. 每日平均 AQI 趨勢 ----------
 
 def daily_avg_aqi(hourly_df: pd.DataFrame) -> pd.DataFrame:
+    """計算每日平均 AQI。"""
     df = hourly_df.copy()
-
+    df["datacreationdate"] = pd.to_datetime(df["datacreationdate"], errors="coerce")
+    df = df.dropna(subset=["datacreationdate", "aqi"])
     df["date"] = df["datacreationdate"].dt.date
 
     result = (
@@ -15,50 +18,47 @@ def daily_avg_aqi(hourly_df: pd.DataFrame) -> pd.DataFrame:
         .reset_index()
         .rename(columns={"aqi": "avg_aqi"})
     )
-
     return result
 
 
 # ---------- 2. 各縣市平均 AQI ----------
 
 def avg_aqi_by_county(hourly_df: pd.DataFrame) -> pd.DataFrame:
+    """計算各縣市平均 AQI 以進行排名。"""
     df = hourly_df.copy()
-
+    df["aqi"] = pd.to_numeric(df["aqi"], errors="coerce")
+    df = df.dropna(subset=["aqi", "county"])
+    
     result = (
         df.groupby("county")["aqi"]
         .mean()
         .sort_values(ascending=False)
         .reset_index()
     )
-
     return result
 
 
 # ---------- 2.5 縣市穩定性 vs 波動度 ----------
 
 def analyze_county_stability(hourly_df: pd.DataFrame) -> pd.DataFrame:
+    """分析各縣市 AQI 的平均值、波動度及高污染次數，並計算其排名。"""
     df = hourly_df.copy()
+    df["aqi"] = pd.to_numeric(df["aqi"], errors="coerce")
+    df = df.dropna(subset=["aqi", "county"])
 
-    # Calculate metrics per county
-    grouped = df.groupby("county")["aqi"]
-    
-    metrics = grouped.agg(
-        mean_aqi="mean",
-        std_aqi="std",
-        total_count="count",
+    # 單次聚合處理平均、變異與高污染次數
+    result = df.groupby("county").agg(
+        mean_aqi=("aqi", "mean"),
+        std_aqi=("aqi", "std"),
+        total_count=("aqi", "count"),
+        high_pollution_count=("aqi", lambda x: (x > 100).sum())
     ).reset_index()
 
-    # Calculate high pollution count safely (aqi > 100)
-    high_pol_counts = df[df["aqi"] > 100].groupby("county").size().reset_index(name="high_pollution_count")
+    result["std_aqi"] = result["std_aqi"].fillna(0)
+    # 加入最低樣本數限制：觀察數少於 5，視為代表性不足，比例設為 0
+    result["high_pollution_ratio"] = np.where(result["total_count"] < 5, 0.0, (result["high_pollution_count"] / result["total_count"]).fillna(0))
     
-    # Merge and fillna for counties with 0 high pollution events
-    result = metrics.merge(high_pol_counts, on="county", how="left")
-    result["high_pollution_count"] = result["high_pollution_count"].fillna(0)
-    
-    # Calculate ratio
-    result["high_pollution_ratio"] = result["high_pollution_count"] / result["total_count"]
-    
-    # Calculate ranks (dense descending)
+    # 排名
     result["mean_rank"] = result["mean_aqi"].rank(ascending=False, method="min").astype(int)
     result["volatility_rank"] = result["std_aqi"].rank(ascending=False, method="min").astype(int)
     result["high_pollution_rank"] = result["high_pollution_count"].rank(ascending=False, method="min").astype(int)
@@ -70,25 +70,25 @@ def analyze_county_stability(hourly_df: pd.DataFrame) -> pd.DataFrame:
 # ---------- 2.6 縣市風險分數 (County Risk) ----------
 
 def calculate_county_risk_score(hourly_df: pd.DataFrame) -> pd.DataFrame:
+    """計算各縣市的綜合污染風險分數 (合併平均濃度與相對波動特徵)。"""
     df = hourly_df.copy()
+    df["aqi"] = pd.to_numeric(df["aqi"], errors="coerce")
+    df = df.dropna(subset=["aqi", "county"])
 
-    grouped = df.groupby("county")["aqi"]
-    metrics = grouped.agg(
-        mean_aqi="mean",
-        std_aqi="std",
-        total_count="count",
+    result = df.groupby("county").agg(
+        mean_aqi=("aqi", "mean"),
+        std_aqi=("aqi", "std"),
+        total_count=("aqi", "count"),
+        high_pollution_count=("aqi", lambda x: (x > 100).sum())
     ).reset_index()
 
-    high_pol_counts = df[df["aqi"] > 100].groupby("county").size().reset_index(name="high_pollution_count")
-    
-    result = metrics.merge(high_pol_counts, on="county", how="left")
-    result["high_pollution_count"] = result["high_pollution_count"].fillna(0)
-    result["high_pollution_ratio"] = result["high_pollution_count"] / result["total_count"]
-    
     result["std_aqi"] = result["std_aqi"].fillna(0)
+    # 加入最低樣本數限制：觀察數少於 5，視為代表性不足，比例設為 0
+    result["high_pollution_ratio"] = np.where(result["total_count"] < 5, 0.0, (result["high_pollution_count"] / result["total_count"]).fillna(0))
     
-    # 建立 CV (變異係數, Coefficient of Variation) 來解耦平均值與波動度
-    result["cv_aqi"] = result["std_aqi"] / result["mean_aqi"]
+    # 安全計算 CV (變異係數)：加入邏輯基數 30.0，防止低污染區 (如台東) 因分母極小導致 CV 噴發誤導
+    safe_mean = np.maximum(result["mean_aqi"], 30.0)
+    result["cv_aqi"] = result["std_aqi"] / safe_mean
     
     def normalize(series):
         s_min, s_max = series.min(), series.max()
@@ -97,71 +97,28 @@ def calculate_county_risk_score(hourly_df: pd.DataFrame) -> pd.DataFrame:
     result["mean_aqi_norm"] = normalize(result["mean_aqi"])
     result["cv_aqi_norm"] = normalize(result["cv_aqi"])
 
-    # Base Score: 50% 絕對長期濃度 + 50% 相對波動度 (消除共線性)
+    # Base Score & Penalty
     base_score = result["mean_aqi_norm"] * 0.5 + result["cv_aqi_norm"] * 0.5
-    
-    # Penalty Multiplier: 高污染發生率作為極端懲罰加乘
     raw_risk = base_score * (1.0 + result["high_pollution_ratio"])
 
-    # 將最終結果常態化成 0~100 分
+    # 常態化成 0~100 分
     result["risk_score"] = normalize(raw_risk) * 100.0
-    
     result["risk_rank"] = result["risk_score"].rank(ascending=False, method="min").astype(int)
     
     final_cols = ["county", "mean_aqi", "std_aqi", "high_pollution_ratio", "cv_aqi", "risk_score", "risk_rank"]
     return result[final_cols].sort_values("risk_score", ascending=False)
 
-# ---------- 2.6 縣市風險分數 (County Risk) ----------
-
-def calculate_county_risk_score(hourly_df: pd.DataFrame) -> pd.DataFrame:
-    df = hourly_df.copy()
-
-    grouped = df.groupby("county")["aqi"]
-    metrics = grouped.agg(
-        mean_aqi="mean",
-        std_aqi="std",
-        total_count="count",
-    ).reset_index()
-
-    high_pol_counts = df[df["aqi"] > 100].groupby("county").size().reset_index(name="high_pollution_count")
-    
-    result = metrics.merge(high_pol_counts, on="county", how="left")
-    result["high_pollution_count"] = result["high_pollution_count"].fillna(0)
-    result["high_pollution_ratio"] = result["high_pollution_count"] / result["total_count"]
-    
-    result["std_aqi"] = result["std_aqi"].fillna(0)
-    
-    # 建立 CV (變異係數, Coefficient of Variation) 來解耦平均值與波動度
-    result["cv_aqi"] = result["std_aqi"] / result["mean_aqi"]
-    
-    def normalize(series):
-        s_min, s_max = series.min(), series.max()
-        return (series - s_min) / (s_max - s_min) if s_max > s_min else series * 0.0
-
-    result["mean_aqi_norm"] = normalize(result["mean_aqi"])
-    result["cv_aqi_norm"] = normalize(result["cv_aqi"])
-
-    # Base Score: 50% 絕對長期濃度 + 50% 相對波動度 (消除共線性)
-    base_score = result["mean_aqi_norm"] * 0.5 + result["cv_aqi_norm"] * 0.5
-    
-    # Penalty Multiplier: 高污染發生率作為極端懲罰加乘
-    raw_risk = base_score * (1.0 + result["high_pollution_ratio"])
-
-    # 將最終結果常態化成 0~100 分
-    result["risk_score"] = normalize(raw_risk) * 100.0
-    
-    result["risk_rank"] = result["risk_score"].rank(ascending=False, method="min").astype(int)
-    
-    final_cols = ["county", "mean_aqi", "std_aqi", "high_pollution_ratio", "cv_aqi", "risk_score", "risk_rank"]
-    return result[final_cols].sort_values("risk_score", ascending=False)
 
 # ---------- 3. 高污染時段（AQI > 100） ----------
 
 def high_pollution_hours(hourly_df: pd.DataFrame) -> pd.DataFrame:
+    """計算整體資料中，各小時發生高污染 (AQI > 100) 的總次數。"""
     df = hourly_df.copy()
+    df["datacreationdate"] = pd.to_datetime(df["datacreationdate"], errors="coerce")
+    df["aqi"] = pd.to_numeric(df["aqi"], errors="coerce")
+    df = df.dropna(subset=["datacreationdate", "aqi"])
 
     df = df[df["aqi"] > 100]
-
     df["hour"] = df["datacreationdate"].dt.hour
 
     result = (
@@ -170,91 +127,42 @@ def high_pollution_hours(hourly_df: pd.DataFrame) -> pd.DataFrame:
         .reset_index(name="high_pollution_count")
         .sort_values("high_pollution_count", ascending=False)
     )
-
     return result
 
 
 def high_pollution_hour_ratio(hourly_df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Calculates the ratio of high pollution (AQI > 100) records for each hour of the day.
-    Outputs: hour, total_count, high_pollution_count, high_pollution_ratio
-    """
+    """計算全區各小時高污染 (AQI > 100) 的發生比例。"""
     df = hourly_df.copy()
-    
-    # Ensure datacreationdate is datetime and aqi is numeric
     df["datacreationdate"] = pd.to_datetime(df["datacreationdate"], errors="coerce")
     df["aqi"] = pd.to_numeric(df["aqi"], errors="coerce")
-    
-    # Drop rows with missing datetime or aqi
     df = df.dropna(subset=["datacreationdate", "aqi"])
-    
-    # Extract hour
     df["hour"] = df["datacreationdate"].dt.hour
     
-    # Calculate total records per hour
-    total_counts = df.groupby("hour").size().reset_index(name="total_count")
+    result = df.groupby("hour").agg(
+        total_count=("aqi", "count"),
+        high_pollution_count=("aqi", lambda x: (x > 100).sum())
+    ).reset_index()
     
-    # Calculate high pollution records per hour
-    high_pol = df[df["aqi"] > 100]
-    high_counts = high_pol.groupby("hour").size().reset_index(name="high_pollution_count")
-    
-    # Merge and fill missing high pollution counts with 0, then cast both to int
-    result = total_counts.merge(high_counts, on="hour", how="left")
-    result["high_pollution_count"] = result["high_pollution_count"].fillna(0).astype(int)
-    result["total_count"] = result["total_count"].astype(int)
-    
-    # Calculate ratio safely to prevent division by zero
-    result["high_pollution_ratio"] = 0.0
-    mask = result["total_count"] > 0
-    result.loc[mask, "high_pollution_ratio"] = result.loc[mask, "high_pollution_count"] / result.loc[mask, "total_count"]
-    
-    # Sort primarily by hour
-    result = result.sort_values("hour").reset_index(drop=True)
-    
-    return result[["hour", "total_count", "high_pollution_count", "high_pollution_ratio"]]
+    # 加入最低樣本數限制避免單一極端值主導
+    result["high_pollution_ratio"] = np.where(result["total_count"] < 5, 0.0, (result["high_pollution_count"] / result["total_count"]).fillna(0))
+    return result.sort_values("hour").reset_index(drop=True)
 
 
 def high_pollution_hour_ratio_by_county(hourly_df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Calculates the ratio of high pollution (AQI > 100) records for each hour, grouped by county.
-    Outputs: county, hour, total_count, high_pollution_count, high_pollution_ratio
-    """
+    """計算各縣市每小時高污染 (AQI > 100) 的發生比例。"""
     df = hourly_df.copy()
-    
-    # Ensure datacreationdate is datetime and aqi is numeric
     df["datacreationdate"] = pd.to_datetime(df["datacreationdate"], errors="coerce")
     df["aqi"] = pd.to_numeric(df["aqi"], errors="coerce")
-    
-    # Drop rows with missing datetime, aqi, or county
     df = df.dropna(subset=["datacreationdate", "aqi", "county"])
-    
-    # Extract hour
     df["hour"] = df["datacreationdate"].dt.hour
     
-    # Calculate total records per county and hour
-    total_counts = df.groupby(["county", "hour"]).size().reset_index(name="total_count")
-    
-    # Calculate high pollution records per county and hour
-    high_pol = df[df["aqi"] > 100]
-    high_counts = high_pol.groupby(["county", "hour"]).size().reset_index(name="high_pollution_count")
-    
-    # Merge and fill missing high pollution counts with 0, then cast both to int
-    result = total_counts.merge(high_counts, on=["county", "hour"], how="left")
-    result["high_pollution_count"] = result["high_pollution_count"].fillna(0).astype(int)
-    result["total_count"] = result["total_count"].astype(int)
-    
-    # Calculate ratio safely to prevent division by zero
-    result["high_pollution_ratio"] = 0.0
-    mask = result["total_count"] > 0
-    result.loc[mask, "high_pollution_ratio"] = result.loc[mask, "high_pollution_count"] / result.loc[mask, "total_count"]
-    
-    # Sort primarily by county, then by hour
-    result = result.sort_values(["county", "hour"]).reset_index(drop=True)
-    
-    return result[["county", "hour", "total_count", "high_pollution_count", "high_pollution_ratio"]]
-    result = result.sort_values(["county", "hour"]).reset_index(drop=True)
-    
-    return result
+    result = df.groupby(["county", "hour"]).agg(
+        total_count=("aqi", "count"),
+        high_pollution_count=("aqi", lambda x: (x > 100).sum())
+    ).reset_index()
+    # 加入最低樣本數限制避免單一極端值主導
+    result["high_pollution_ratio"] = np.where(result["total_count"] < 5, 0.0, (result["high_pollution_count"] / result["total_count"]).fillna(0))
+    return result.sort_values(["county", "hour"]).reset_index(drop=True)
 
 
 # ---------- 4. 時間結構分析（日、週末、月份） ----------
@@ -262,9 +170,10 @@ def high_pollution_hour_ratio_by_county(hourly_df: pd.DataFrame) -> pd.DataFrame
 def time_structure_analysis(
     hourly_clean: pd.DataFrame,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """計算日平均與 7 天滾動平均、週末效應、及月平均趨勢。"""
     df = hourly_clean.copy()
-
     df["datacreationdate"] = pd.to_datetime(df["datacreationdate"], errors="coerce")
+    df["aqi"] = pd.to_numeric(df["aqi"], errors="coerce")
     df = df.dropna(subset=["datacreationdate", "aqi"])
 
     daily_df = (
@@ -293,19 +202,18 @@ def time_structure_analysis(
     )
 
     daily_df = daily_df[["date", "avg_aqi", "rolling_7d_avg"]]
-
     return daily_df, weekday_vs_weekend_df, monthly_avg_df
+
 
 # ---------- 5. 目前狀態判讀 ----------
 
 def current_status_interpretation(daily_df: pd.DataFrame) -> str:
+    """依據日平均 AQI 與滾動平均趨勢，判斷污染的短期狀態。"""
     df = daily_df.copy()
-
     if df.empty or len(df) < 2:
         return "status_insufficient_data"
 
     df = df.sort_values("date").reset_index(drop=True)
-
     latest = df.iloc[-1]
     previous = df.iloc[-2]
 
@@ -316,15 +224,16 @@ def current_status_interpretation(daily_df: pd.DataFrame) -> str:
     if latest_aqi >= 100 and latest_rolling >= 80:
         return "status_sustained_pollution"
 
-    if latest_aqi - latest_rolling >= 15:
+    # 動態判讀：從絕對達標改為要求 1) 長期均值以上增長 25%, 且 2) AQI 大於 50 避免極低區間雜訊, 且 3) 絕對值增長至少 10
+    if (latest_aqi >= latest_rolling * 1.25) and (latest_aqi >= 50) and (latest_aqi - latest_rolling >= 10):
         return "status_short_term_spike"
-
+        
     if latest_rolling < previous_rolling - 3:
         return "status_improving_trend"
-
+        
     if abs(latest_aqi - latest_rolling) < 10 and abs(latest_rolling - previous_rolling) < 3:
         return "status_normal_variation"
-
+        
     if latest_rolling > previous_rolling:
         return "status_worsening_trend"
 
@@ -346,75 +255,64 @@ def detect_pollution_spikes(
     min_value: float = 0.0
 ) -> pd.DataFrame:
     """
-    Detect abnormal high-pollution events (spikes) in air quality time series.
-    Uses strict look-ahead bias avoidance.
+    偵測測站空品異常飆高的事件。向量化操作避免 Python for 迴圈，
+    並嚴格利用 .shift(1) 防止看透未來偏差（Look-ahead bias）。
     """
     result_df = df.copy()
-    
-    # Validation & Cleaning
     result_df[time_col] = pd.to_datetime(result_df[time_col], errors="coerce")
     result_df[pollutant_col] = pd.to_numeric(result_df[pollutant_col], errors="coerce")
     result_df = result_df.dropna(subset=[pollutant_col, time_col])
     
-    # Sort for robust time series calculations
     result_df = result_df.sort_values(by=[site_col, time_col]).reset_index(drop=True)
+    # 填補因斷訊導致的空缺 (前向填補，限3小時以內)
+    result_df[pollutant_col] = result_df.groupby(site_col)[pollutant_col].ffill(limit=3)
     
-    # Initialize metric arrays
-    baseline_list = []
-    zscore_list = []
-    spike_flag_list = []
-    spike_strength_list = []
+    # 計算「區域背景值」：找出同時段同縣市「其他」測站的平均值。避免受每日普遍通勤尖峰誤導
+    county_sum = result_df.groupby([county_col, time_col])[pollutant_col].transform('sum')
+    county_count = result_df.groupby([county_col, time_col])[pollutant_col].transform('count')
+    # 若該縣市此時只有一個有效測站，背景值退化為自己本身，否則排除自己來算同區平均
+    county_bg = np.where(county_count > 1, (county_sum - result_df[pollutant_col]) / (county_count - 1), result_df[pollutant_col])
+
+    # 群組化並提取目標序列
+    grouped = result_df.groupby(site_col)[pollutant_col]
     
-    # Process GroupBy avoiding SettingWithCopyWarning
-    for site, group in result_df.groupby(site_col):
-        values = group[pollutant_col]
+    # 針對所有 group 進行向量化運算
+    expanding_mean_past = grouped.expanding().mean().reset_index(level=0, drop=True).shift(1)
+    
+    if method == "rolling_threshold":
+        rolling_mean_past = grouped.rolling(window=rolling_window, min_periods=1).mean().reset_index(level=0, drop=True).shift(1)
+        baseline = rolling_mean_past.fillna(expanding_mean_past).clip(lower=0.1)
         
-        # Calculate past expanding mean
-        expanding_mean_past = values.expanding().mean().shift(1)
+        ratio = result_df[pollutant_col] / baseline
+        # 新增條件：必須也高於「同縣市同時段區域背景值」達 25%，確保這是「局部異質污染」而非大環境一起變差
+        is_spike = (ratio > threshold_ratio) & (result_df[pollutant_col] >= min_value) & (result_df[pollutant_col] > county_bg * 1.25)
+        strength = result_df[pollutant_col] - baseline
+        z_score = pd.Series([pd.NA] * len(result_df), index=result_df.index)
         
-        if method == "rolling_threshold":
-            # Calculate past rolling mean
-            rolling_mean_past = values.rolling(window=rolling_window, min_periods=1).mean().shift(1)
-            
-            # Fill NaNs with past expanding mean, clip to 0.1 to avoid DivisionByZero
-            baseline = rolling_mean_past.fillna(expanding_mean_past).clip(lower=0.1)
-            
-            # Calculate ratios and logic
-            ratio = values / baseline
-            is_spike = (ratio > threshold_ratio) & (values >= min_value)
-            
-            strength = values - baseline
-            z_score = pd.Series([pd.NA] * len(values), index=values.index)
-            
-        elif method == "zscore":
-            expanding_std_past = values.expanding().std().shift(1)
-            
-            # Fallback for STD 0
-            expanding_std_past = expanding_std_past.replace(0, 1.0).fillna(1.0)
-            baseline = expanding_mean_past.clip(lower=0.1)
-            
-            z_score = (values - baseline) / expanding_std_past
-            is_spike = (z_score > zscore_threshold) & (values >= min_value)
-            
-            strength = values - baseline
-            
-        baseline_list.extend(baseline.tolist())
-        zscore_list.extend(z_score.tolist())
-        spike_flag_list.extend(is_spike.tolist())
-        spike_strength_list.extend(strength.tolist())
+    elif method == "zscore":
+        expanding_std_past = grouped.expanding().std().reset_index(level=0, drop=True).shift(1)
+        expanding_std_past = expanding_std_past.replace(0, 1.0).fillna(1.0)
+        baseline = expanding_mean_past.clip(lower=0.1)
         
-    result_df["baseline"] = baseline_list
-    result_df["z_score"] = zscore_list
-    result_df["spike_flag"] = spike_flag_list
-    result_df["spike_strength"] = spike_strength_list
+        z_score = (result_df[pollutant_col] - baseline) / expanding_std_past
+        # 加入大於區域背景值的檢驗，確保是「局部異質」
+        is_spike = (z_score > zscore_threshold) & (result_df[pollutant_col] >= min_value) & (result_df[pollutant_col] > county_bg * 1.25)
+        strength = result_df[pollutant_col] - baseline
+        
+    result_df["baseline"] = baseline
+    result_df["z_score"] = z_score
+    result_df["spike_flag"] = is_spike
+    result_df["spike_strength"] = strength
 
     spikes = result_df[result_df["spike_flag"]].copy()
     cols_to_keep = [time_col, site_col, county_col, pollutant_col, "baseline", "z_score", "spike_strength"]
     return spikes[cols_to_keep].sort_values(by=time_col, ascending=False).reset_index(drop=True)
 
+
 # ---------- 7. 異常污染飆高 Summaries ----------
 
 def spike_summary_by_county(spike_df: pd.DataFrame) -> pd.DataFrame:
+    """彙整各縣市的 Spike 次數與強度。"""
     if spike_df.empty:
         return pd.DataFrame(columns=["county", "spike_count", "avg_spike_strength", "max_spike_strength"])
         
@@ -426,6 +324,7 @@ def spike_summary_by_county(spike_df: pd.DataFrame) -> pd.DataFrame:
     return summary.sort_values(by="spike_count", ascending=False).reset_index(drop=True)
 
 def spike_summary_by_site(spike_df: pd.DataFrame) -> pd.DataFrame:
+    """彙整各測站的 Spike 次數與強度。"""
     if spike_df.empty:
         return pd.DataFrame(columns=["sitename", "county", "spike_count", "avg_spike_strength", "max_spike_strength"])
         
@@ -437,11 +336,13 @@ def spike_summary_by_site(spike_df: pd.DataFrame) -> pd.DataFrame:
     return summary.sort_values(by="spike_count", ascending=False).reset_index(drop=True)
 
 def spike_time_pattern(spike_df: pd.DataFrame, time_col: str = "datacreationdate") -> pd.DataFrame:
+    """解析每日各小時容易發生 Spike 的時間規律。"""
     if spike_df.empty:
         return pd.DataFrame(columns=["hour", "spike_count"])
         
     df = spike_df.copy()
     df[time_col] = pd.to_datetime(df[time_col], errors="coerce")
+    df = df.dropna(subset=[time_col])
     df["hour"] = df[time_col].dt.hour
     
     summary = df.groupby("hour").agg(

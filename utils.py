@@ -8,7 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent
 
 def t(key: str) -> str:
     lang = st.session_state.get("lang", "zh")
-    return TEXT[lang][key]
+    return TEXT.get(lang, TEXT["zh"]).get(key, key)
 
 
 def set_language():
@@ -240,13 +240,68 @@ def apply_style():
             line-height: 1.65;
             color: #466176;
         }
+
+        /* Tabs 深度覆寫：統一選中藍色與 hover 淺藍 */
+        div[data-testid="stTabs"] button[data-baseweb="tab"],
+        div[data-testid="stTabs"] [role="tablist"] button {
+            color: #5e6670 !important;
+            transition: color 0.2s ease, box-shadow 0.2s ease !important;
+        }
+
+        /* 未選中 Tab hover 顏色 */
+        div[data-testid="stTabs"] button[data-baseweb="tab"]:not([aria-selected="true"]):hover,
+        div[data-testid="stTabs"] [role="tablist"] button:not([aria-selected="true"]):hover {
+            color: #6BA3C8 !important;
+        }
+
+        /* 選中 Tab 文字色 */
+        div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"],
+        div[data-testid="stTabs"] [role="tablist"] button[aria-selected="true"] {
+            color: #1F5D99 !important;
+            font-weight: 600 !important;
+            box-shadow: inset 0 -2px 0 #1F5D99 !important;
+        }
+
+        /* BaseWeb 指示線（highlight bar）顏色 */
+        div[data-testid="stTabs"] [data-baseweb="tab-highlight"] {
+            background-color: #1F5D99 !important;
+        }
+
+        /* Tabs 區域底線色 */
+        div[data-testid="stTabs"] > div:first-child::after {
+            background-color: #e0e6ed !important;
+        }
         </style>
         """,
         unsafe_allow_html=True,
     )
 
 
-@st.cache_data
+@st.cache_data(ttl=3600)
+def load_raw_data() -> pd.DataFrame:
+    """抓取原始資料（此處以讀取 CSV 為例，也可改為 API）並作 1 小時快取"""
+    data_path = BASE_DIR / "data/processed/hourly_clean.csv"
+    if data_path.exists():
+        df = pd.read_csv(data_path, parse_dates=["datacreationdate"])
+        return df.copy()
+    return pd.DataFrame()
+
+@st.cache_data(ttl=3600)
+def cached_calculate_county_risk_score(hourly_df: pd.DataFrame) -> pd.DataFrame:
+    from src.analyze_data import calculate_county_risk_score
+    return calculate_county_risk_score(hourly_df).copy()
+
+@st.cache_data(ttl=3600)
+def cached_detect_pollution_spikes(df: pd.DataFrame, **kwargs) -> pd.DataFrame:
+    from src.analyze_data import detect_pollution_spikes
+    return detect_pollution_spikes(df, **kwargs).copy()
+
+@st.cache_data(ttl=3600)
+def cached_analyze_county_stability(hourly_df: pd.DataFrame) -> pd.DataFrame:
+    from src.analyze_data import analyze_county_stability
+    return analyze_county_stability(hourly_df).copy()
+
+@st.cache_data(ttl=3600)
 def load_data():
     time_structure_path = BASE_DIR / "output/tables/daily_time_structure.csv"
     fallback_path = BASE_DIR / "output/tables/daily_trend.csv"

@@ -80,8 +80,8 @@ band_chart = (
     )
 )
 
-daily_color = "#2f5fa5"
-rolling_color = "#8fb3e8"
+daily_color = "#245E9B"
+rolling_color = "#7FAFDE"
 
 x_encoding = alt.X(
     "date:T",
@@ -95,8 +95,8 @@ x_encoding = alt.X(
     ),
 )
 
-daily_color = "#2f5fa5"
-rolling_color = "#8fb3e8"
+daily_color = "#245E9B"
+rolling_color = "#7FAFDE"
 
 x_encoding = alt.X(
     "date:T",
@@ -178,7 +178,7 @@ hover_points = (
 # 被 hover 到時顯示的小點
 visible_points = (
     alt.Chart(hover_df)
-    .mark_point(size=30, filled=True, color="#555555")
+    .mark_point(size=30, filled=True, color="#1E4F86")
     .encode(
         x="date:T",
         y="value:Q",
