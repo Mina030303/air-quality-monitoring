@@ -191,6 +191,31 @@ def apply_style():
             background: #f6f9fc !important;
         }
 
+        /* 手機版：語言選單改為正常流式排版，避免與標題擠在同一行 */
+        @media (max-width: 768px) {
+            .st-key-global_lang_select {
+                position: static !important;
+                top: auto !important;
+                right: auto !important;
+                width: 100% !important;
+                margin: 0 0 0.65rem 0 !important;
+                z-index: auto !important;
+            }
+
+            .st-key-global_lang_select div[data-baseweb="select"] {
+                min-width: 100% !important;
+                width: 100% !important;
+            }
+
+            .st-key-global_lang_select div[data-baseweb="select"] > div {
+                width: 100% !important;
+            }
+
+            h1 {
+                margin-top: 0 !important;
+            }
+        }
+
         /* 縣市 filter 樣式 (白底藍框，與語言選單一致) */
         .st-key-hours_county_select div[data-baseweb="select"] > div,
         .st-key-spike_pollutant_select div[data-baseweb="select"] > div,
