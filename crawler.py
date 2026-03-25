@@ -8,7 +8,8 @@ import requests
 
 # MOENV open data: Air Quality Index (AQI) realtime dataset
 API_URL = "https://data.moenv.gov.tw/api/v2/aqx_p_432"
-OUTPUT_PATH = Path("data") / "hourly_aqi.csv"
+BASE_DIR = Path(__file__).resolve().parent
+OUTPUT_PATH = BASE_DIR / "data" / "hourly_aqi.csv"
 
 
 def fetch_hourly_aqi(api_key: str | None = None, timeout: int = 20) -> list[dict]:
