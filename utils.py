@@ -235,7 +235,7 @@ def apply_style():
             .st-key-global_lang_select,
             .st-key-global_lang_select div[data-testid="stSelectbox"] {
                 position: fixed !important;
-                top: calc(env(safe-area-inset-top, 0px) + 1.1rem) !important;
+                top: calc(env(safe-area-inset-top, 0px) + 1.8rem) !important;
                 right: 0.55rem !important;
                 width: 124px !important;
                 transform: scale(0.96) !important;
@@ -265,11 +265,11 @@ def apply_style():
             .element-container [data-testid="stVegaLiteChart"],
             .element-container [data-testid="stVegaLiteChart"] > div,
             .element-container [data-testid="stVegaLiteChart"] .vega-embed {
-                width: calc(100vw - 1.1rem) !important;
-                max-width: none !important;
-                margin-left: -0.3rem !important;
-                margin-right: -0.3rem !important;
-                aspect-ratio: 2.4 / 1 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+                aspect-ratio: 2 / 1 !important;
                 height: auto !important;
                 min-height: 0 !important;
             }
