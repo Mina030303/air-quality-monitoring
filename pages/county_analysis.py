@@ -229,7 +229,8 @@ with tab_overview:
         .configure(background="transparent")
     )
 
-    st.altair_chart(risk_chart, use_container_width=True, key="county_risk_bubble_chart")
+    with st.container(key="county_risk_bubble_chart"):
+        st.altair_chart(risk_chart, use_container_width=True)
 
 with tab_metrics:
     st.markdown(f"### {t('indicator_ranking')}")

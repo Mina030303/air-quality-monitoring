@@ -292,17 +292,11 @@ def apply_style():
             .st-key-county_risk_bubble_chart [data-testid="stVegaLiteChart"],
             .st-key-county_risk_bubble_chart [data-testid="stVegaLiteChart"] > div,
             .st-key-county_risk_bubble_chart [data-testid="stVegaLiteChart"] .vega-embed {
-                width: calc(100% + 3.2rem) !important;
+                width: calc(100% + 4rem) !important;
                 max-width: none !important;
-                margin-left: -1.6rem !important;
-                margin-right: -1.6rem !important;
+                margin-left: -2rem !important;
+                margin-right: -2rem !important;
                 aspect-ratio: 16 / 11 !important;
-            }
-
-            .st-key-county_risk_bubble_chart [data-testid="stVegaLiteChart"] canvas,
-            .st-key-county_risk_bubble_chart [data-testid="stVegaLiteChart"] svg {
-                transform: scale(0.93) !important;
-                transform-origin: center center !important;
             }
 
             [data-testid="stHeadingWithActionElements"] h1,
