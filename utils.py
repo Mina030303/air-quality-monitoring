@@ -395,10 +395,29 @@ def apply_style():
 
 @st.cache_data(ttl=3600)
 def load_raw_data() -> pd.DataFrame:
-    """抓取原始資料（此處以讀取 CSV 為例，也可改為 API）並作 1 小時快取"""
-    data_path = BASE_DIR / "data/processed/hourly_clean.csv"
+    """讀取每小時 AQI 原始資料並作 1 小時快取。"""
+    primary_path = BASE_DIR / "data/hourly_aqi.csv"
+    fallback_path = BASE_DIR / "data/processed/hourly_clean.csv"
+    data_path = primary_path if primary_path.exists() else fallback_path
+
     if data_path.exists():
-        df = pd.read_csv(data_path, parse_dates=["datacreationdate"])
+        df = pd.read_csv(data_path)
+
+        rename_map = {}
+        if "AQI" in df.columns and "aqi" not in df.columns:
+            rename_map["AQI"] = "aqi"
+        if "County" in df.columns and "county" not in df.columns:
+            rename_map["County"] = "county"
+        if rename_map:
+            df = df.rename(columns=rename_map)
+
+        # crawler 使用 AQX_P_432 時間欄位常見為 publishtime，統一轉為分析流程使用的 datacreationdate
+        if "datacreationdate" not in df.columns and "publishtime" in df.columns:
+            df = df.rename(columns={"publishtime": "datacreationdate"})
+
+        if "datacreationdate" in df.columns:
+            df["datacreationdate"] = pd.to_datetime(df["datacreationdate"], errors="coerce")
+
         return df.copy()
     return pd.DataFrame()
 
