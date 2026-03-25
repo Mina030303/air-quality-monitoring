@@ -292,10 +292,10 @@ def apply_style():
             .st-key-county_risk_bubble_chart [data-testid="stVegaLiteChart"],
             .st-key-county_risk_bubble_chart [data-testid="stVegaLiteChart"] > div,
             .st-key-county_risk_bubble_chart [data-testid="stVegaLiteChart"] .vega-embed {
-                width: calc(100% + 4rem) !important;
+                width: calc(100% + 3.4rem) !important;
                 max-width: none !important;
-                margin-left: -2rem !important;
-                margin-right: -2rem !important;
+                margin-left: -1.7rem !important;
+                margin-right: -1.7rem !important;
                 aspect-ratio: 16 / 11 !important;
             }
 
