@@ -90,7 +90,11 @@ if not ratio_df.empty:
             alt.Tooltip("high_pollution_count:Q", title=t("hours_tooltip_count")),
         ]
     ).properties(
-        background='transparent'
+        background='transparent',
+        width="container"
+    ).configure_view(
+        continuousWidth=900,
+        continuousHeight=600
     )
     
     st.altair_chart(
@@ -154,7 +158,10 @@ if not ratio_county_df.empty and "county" in ratio_county_df.columns:
             ]
         )
 
-        county_chart = (line + selectors).properties(background='transparent')
+        county_chart = (line + selectors).properties(background='transparent', width="container").configure_view(
+            continuousWidth=900,
+            continuousHeight=600
+        )
 
         st.altair_chart(
             county_chart, 
@@ -195,7 +202,11 @@ orig_chart = alt.Chart(chart_df).mark_bar(
         alt.Tooltip("high_pollution_count:Q", title=t("hours_tooltip_count")),
     ]
 ).properties(
-    background='transparent'
+    background='transparent',
+    width="container"
+).configure_view(
+    continuousWidth=900,
+    continuousHeight=600
 )
 
 st.altair_chart(

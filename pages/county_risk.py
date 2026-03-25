@@ -18,9 +18,6 @@ from utils import (
 apply_style()
 render_global_sidebar("pages/county_risk.py")
 
-# Keep chart heights compact for better mobile reading.
-MOBILE_CHART_HEIGHT = 320
-
 st.markdown(
     """
     <style>
@@ -107,9 +104,9 @@ with tab_risk:
                 alt.Tooltip("high_pollution_ratio:Q", title="High Pollution Ratio", format=".1%"),
             ],
         )
-        .properties(height=MOBILE_CHART_HEIGHT)
+        .properties(width="container")
         .configure_axis(grid=True, gridColor="#d8e2ec")
-        .configure_view(strokeWidth=0, fill="transparent")
+        .configure_view(strokeWidth=0, fill="transparent", continuousWidth=900, continuousHeight=600)
         .configure(background="transparent")
     )
     st.altair_chart(risk_chart, use_container_width=True)
@@ -174,9 +171,9 @@ with tab_spike:
                     alt.Tooltip("spike_count:Q", title=t("spike_total_count")),
                 ],
             )
-            .properties(height=MOBILE_CHART_HEIGHT)
+            .properties(width="container")
             .configure_axis(grid=True, gridColor="#d8e2ec")
-            .configure_view(strokeWidth=0, fill="transparent")
+            .configure_view(strokeWidth=0, fill="transparent", continuousWidth=900, continuousHeight=600)
             .configure(background="transparent")
         )
         st.altair_chart(spike_chart, use_container_width=True)
@@ -200,8 +197,9 @@ with tab_spike:
                     alt.Tooltip("spike_count:Q", title=t("hours_spike_count_legend")),
                 ],
             )
+            .properties(width="container")
             .configure_axis(grid=True, gridColor="#d8e2ec")
-            .configure_view(strokeWidth=0, fill="transparent")
+            .configure_view(strokeWidth=0, fill="transparent", continuousWidth=900, continuousHeight=600)
             .configure(background="transparent")
         )
         st.altair_chart(spike_hour_chart, use_container_width=True)
@@ -254,8 +252,9 @@ with tab_trend:
                 alt.Tooltip("value:Q", title=t("aqi_value_label"), format=".2f"),
             ],
         )
+        .properties(width="container")
         .configure_axis(grid=True, gridColor="#d8e2ec")
-        .configure_view(strokeWidth=0, fill="transparent")
+        .configure_view(strokeWidth=0, fill="transparent", continuousWidth=900, continuousHeight=600)
         .configure(background="transparent")
     )
 

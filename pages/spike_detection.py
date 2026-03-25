@@ -126,11 +126,13 @@ with heatmap_container:
         ]
     ).properties(
         background='transparent',
-        height=300
+        width="container"
     ).configure_axis(
         grid=False
     ).configure_view(
-        strokeOpacity=0
+        strokeOpacity=0,
+        continuousWidth=900,
+        continuousHeight=600
     )
     st.altair_chart(heatmap_chart, use_container_width=True)
 
@@ -176,7 +178,8 @@ with chart_container:
     )
 
     combined_chart = (base_line + spike_points).properties(
-        background='transparent'
+        background='transparent',
+        width="container"
     )
     st.altair_chart(combined_chart, use_container_width=True)
 

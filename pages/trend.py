@@ -260,6 +260,8 @@ main_chart = (
     .configure_view(
         strokeWidth=0,
         fill="transparent",
+        continuousWidth=900,
+        continuousHeight=600,
     )
     .configure(
         background="transparent",
@@ -271,6 +273,8 @@ legend_chart = (
     .configure_view(
         strokeWidth=0,
         fill="transparent",
+        continuousWidth=900,
+        continuousHeight=600,
     )
     .configure(
         background="transparent",

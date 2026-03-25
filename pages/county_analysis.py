@@ -11,9 +11,6 @@ from utils import apply_style, render_global_sidebar, load_data, load_raw_data, 
 apply_style()
 render_global_sidebar("pages/county_analysis.py")
 
-# ===== 設定與資料載入 =====
-MOBILE_CHART_HEIGHT = 300
-
 trend, county, hours = load_data()
 
 with st.spinner(t('loading_analysis')):
@@ -224,7 +221,7 @@ with tab_overview:
         .properties(width="container", padding={"right": 70, "left": 10, "top": 10, "bottom": 10})
         .interactive()
         .configure_axis(grid=True, gridColor="#d8e2ec")
-        .configure_view(strokeWidth=0, fill="transparent")
+        .configure_view(strokeWidth=0, fill="transparent", continuousWidth=900, continuousHeight=600)
         .configure(background="transparent")
     )
 
@@ -252,9 +249,9 @@ with tab_metrics:
                     alt.Tooltip("mean_aqi:Q", title="Mean AQI", format=".2f"),
                 ],
             )
-            .properties(height=MOBILE_CHART_HEIGHT)
+            .properties(width="container")
             .configure_axis(grid=True, gridColor="#d8e2ec")
-            .configure_view(strokeWidth=0, fill="transparent")
+            .configure_view(strokeWidth=0, fill="transparent", continuousWidth=900, continuousHeight=600)
             .configure(background="transparent")
         )
         st.altair_chart(mean_chart, use_container_width=True)
@@ -272,9 +269,9 @@ with tab_metrics:
                     alt.Tooltip("std_aqi:Q", title="Std AQI", format=".2f"),
                 ],
             )
-            .properties(height=MOBILE_CHART_HEIGHT)
+            .properties(width="container")
             .configure_axis(grid=True, gridColor="#d8e2ec")
-            .configure_view(strokeWidth=0, fill="transparent")
+            .configure_view(strokeWidth=0, fill="transparent", continuousWidth=900, continuousHeight=600)
             .configure(background="transparent")
         )
         st.altair_chart(std_chart, use_container_width=True)
@@ -291,9 +288,9 @@ with tab_metrics:
                 alt.Tooltip("high_pollution_ratio:Q", title="High Pollution Ratio", format=".2%"),
             ],
         )
-        .properties(height=280)
+        .properties(height=280, width="container")
         .configure_axis(grid=True, gridColor="#d8e2ec")
-        .configure_view(strokeWidth=0, fill="transparent")
+        .configure_view(strokeWidth=0, fill="transparent", continuousWidth=900, continuousHeight=600)
         .configure(background="transparent")
     )
     st.altair_chart(ratio_chart, use_container_width=True)
