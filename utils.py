@@ -288,6 +288,23 @@ def apply_style():
                 height: 100% !important;
             }
 
+            /* 僅氣泡圖：手機上顯示區域更寬，但圖內容稍微縮小 */
+            .st-key-county_risk_bubble_chart [data-testid="stVegaLiteChart"],
+            .st-key-county_risk_bubble_chart [data-testid="stVegaLiteChart"] > div,
+            .st-key-county_risk_bubble_chart [data-testid="stVegaLiteChart"] .vega-embed {
+                width: calc(100% + 2.4rem) !important;
+                max-width: none !important;
+                margin-left: -1.2rem !important;
+                margin-right: -1.2rem !important;
+                aspect-ratio: 16 / 11 !important;
+            }
+
+            .st-key-county_risk_bubble_chart [data-testid="stVegaLiteChart"] canvas,
+            .st-key-county_risk_bubble_chart [data-testid="stVegaLiteChart"] svg {
+                transform: scale(0.93) !important;
+                transform-origin: center center !important;
+            }
+
             [data-testid="stHeadingWithActionElements"] h1,
             [data-testid="stMarkdownContainer"] h1 {
                 font-size: 1.3rem !important;

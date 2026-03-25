@@ -144,7 +144,7 @@ with tab_overview:
             size=alt.Size(
                 "high_pollution_ratio:Q",
                 title=t("county_high_pol_ratio"),
-                scale=alt.Scale(range=[150, 1300]),
+                scale=alt.Scale(range=[90, 920]),
                 legend=None,
             ),
             color=alt.Color(
@@ -229,7 +229,7 @@ with tab_overview:
         .configure(background="transparent")
     )
 
-    st.altair_chart(risk_chart, use_container_width=True)
+    st.altair_chart(risk_chart, use_container_width=True, key="county_risk_bubble_chart")
 
 with tab_metrics:
     st.markdown(f"### {t('indicator_ranking')}")
