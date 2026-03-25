@@ -97,6 +97,11 @@ def apply_style():
             background: linear-gradient(180deg, #f7fbff 0%, #eef7fc 100%);
         }
 
+        [data-testid="stAppViewContainer"],
+        [data-testid="stAppViewContainer"] * {
+            color: #2f3b4a;
+        }
+
         h1, h2, h3 {
             color: #24557a;
         }
@@ -135,6 +140,18 @@ def apply_style():
             top: 0.5rem !important;
             left: 0.5rem !important;
             z-index: 100001 !important;
+        }
+
+        [data-testid="collapsedControl"] button {
+            background: rgba(255, 255, 255, 0.9) !important;
+            border: 1px solid #c9d7e3 !important;
+            border-radius: 8px !important;
+        }
+
+        [data-testid="collapsedControl"] svg,
+        [data-testid="collapsedControl"] path {
+            stroke: #1f5d99 !important;
+            fill: #1f5d99 !important;
         }
 
         button[kind="header"] {
@@ -203,22 +220,22 @@ def apply_style():
             display: none !important;
         }
 
-        .vega-embed a,
-        .vega-embed button {
-            display: none !important;
-        }
-
         .st-key-global_lang_select div[data-baseweb="select"]:hover > div {
             border-color: #9fb8cf !important;
             background: #f6f9fc !important;
         }
 
-        /* 手機版字級調整並為右上懸浮按鈕預留視覺空間 */
-        @media (max-width: 768px) {
+        /* 手機/平板觸控裝置：強制啟用行動版樣式 */
+        @media (max-width: 1024px), (max-device-width: 1024px), (hover: none) and (pointer: coarse) {
+            [data-testid="stAppViewContainer"],
+            [data-testid="stAppViewContainer"] * {
+                color: #2f3b4a !important;
+            }
+
             .st-key-global_lang_select,
             .st-key-global_lang_select div[data-testid="stSelectbox"] {
                 position: fixed !important;
-                top: calc(env(safe-area-inset-top, 0px) + 3.2rem) !important;
+                top: calc(env(safe-area-inset-top, 0px) + 5.6rem) !important;
                 right: 0.55rem !important;
                 width: 92px !important;
                 transform: scale(0.9) !important;
