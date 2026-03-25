@@ -204,9 +204,40 @@ def apply_style():
 
         /* 手機版字級調整並為右上懸浮按鈕預留視覺空間 */
         @media (max-width: 768px) {
-            .vega-embed {
+            .st-key-global_lang_select {
+                position: fixed !important;
+                top: 0.35rem !important;
+                right: 0.55rem !important;
+                width: 92px !important;
+                transform: scale(0.9) !important;
+                transform-origin: top right !important;
+                z-index: 100200 !important;
+            }
+
+            .st-key-global_lang_select div[data-baseweb="select"] {
+                min-width: 92px !important;
+                width: 92px !important;
+            }
+
+            .st-key-global_lang_select div[data-baseweb="select"] > div {
+                min-height: 34px !important;
+                height: 34px !important;
+            }
+
+            .st-key-global_lang_select div[data-baseweb="select"] span {
+                font-size: 12px !important;
+            }
+
+            [data-testid="stVegaLiteChart"] .vega-embed,
+            .element-container [data-testid="stVegaLiteChart"] .vega-embed {
                 aspect-ratio: 3 / 2 !important;
                 height: auto !important;
+            }
+
+            [data-testid="stVegaLiteChart"] canvas,
+            [data-testid="stVegaLiteChart"] svg {
+                width: 100% !important;
+                height: 100% !important;
             }
 
             [data-testid="stHeadingWithActionElements"] h1,
