@@ -39,7 +39,7 @@ st.title(t("county_risk_title"))
 with st.spinner(t("analyzing_data")):
     hourly_df = load_raw_data()
     if hourly_df.empty:
-        st.warning("County Risk table is not found. Please run main.py data pipeline first.")
+        st.warning(t("county_risk_table_not_found"))
         st.stop()
 
     risk_df = cached_calculate_county_risk_score(hourly_df)
@@ -99,14 +99,14 @@ with tab_risk:
                 alt.Tooltip("county:N", title=t("county")),
                 alt.Tooltip("risk_score:Q", title=t("risk_score"), format=".1f"),
                 alt.Tooltip("risk_rank:Q", title=t("risk_rank")),
-                alt.Tooltip("mean_aqi:Q", title="Mean AQI", format=".1f"),
-                alt.Tooltip("std_aqi:Q", title="Std AQI", format=".1f"),
-                alt.Tooltip("high_pollution_ratio:Q", title="High Pollution Ratio", format=".1%"),
+                alt.Tooltip("mean_aqi:Q", title=t("county_mean_aqi"), format=".1f"),
+                alt.Tooltip("std_aqi:Q", title=t("county_std_aqi"), format=".1f"),
+                alt.Tooltip("high_pollution_ratio:Q", title=t("county_high_pol_ratio"), format=".1%"),
             ],
         )
-        .properties(width="container")
+        .properties(width="container", height=300)
         .configure_axis(grid=True, gridColor="#d8e2ec")
-        .configure_view(strokeWidth=0, fill="transparent", continuousWidth=900, continuousHeight=600)
+        .configure_view(strokeWidth=0, fill="transparent")
         .configure(background="transparent")
     )
     st.altair_chart(risk_chart, use_container_width=True)
@@ -171,9 +171,9 @@ with tab_spike:
                     alt.Tooltip("spike_count:Q", title=t("spike_total_count")),
                 ],
             )
-            .properties(width="container")
+            .properties(width="container", height=300)
             .configure_axis(grid=True, gridColor="#d8e2ec")
-            .configure_view(strokeWidth=0, fill="transparent", continuousWidth=900, continuousHeight=600)
+            .configure_view(strokeWidth=0, fill="transparent")
             .configure(background="transparent")
         )
         st.altair_chart(spike_chart, use_container_width=True)
@@ -197,14 +197,14 @@ with tab_spike:
                     alt.Tooltip("spike_count:Q", title=t("hours_spike_count_legend")),
                 ],
             )
-            .properties(width="container")
+            .properties(width="container", height=300)
             .configure_axis(grid=True, gridColor="#d8e2ec")
-            .configure_view(strokeWidth=0, fill="transparent", continuousWidth=900, continuousHeight=600)
+            .configure_view(strokeWidth=0, fill="transparent")
             .configure(background="transparent")
         )
         st.altair_chart(spike_hour_chart, use_container_width=True)
 
-    with st.expander("點擊查看詳細說明", expanded=False):
+    with st.expander(t("view_details"), expanded=False):
         st.markdown(t("spike_interpretation_text"))
         if not spikes_df.empty:
             st.dataframe(spikes_df.head(20), hide_index=True, use_container_width=True)
@@ -244,7 +244,7 @@ with tab_trend:
             color=alt.Color(
                 "series:N",
                 scale=alt.Scale(domain=[t("daily_legend"), t("rolling_legend")], range=["#245E9B", "#7FAFDE"]),
-                legend=alt.Legend(orient="top"),
+                legend=alt.Legend(orient="top", title=None),
             ),
             tooltip=[
                 alt.Tooltip("date:T", title=t("date_label"), format="%Y-%m-%d"),
@@ -252,14 +252,14 @@ with tab_trend:
                 alt.Tooltip("value:Q", title=t("aqi_value_label"), format=".2f"),
             ],
         )
-        .properties(width="container")
+        .properties(width="container", height=300)
         .configure_axis(grid=True, gridColor="#d8e2ec")
-        .configure_view(strokeWidth=0, fill="transparent", continuousWidth=900, continuousHeight=600)
+        .configure_view(strokeWidth=0, fill="transparent")
         .configure(background="transparent")
     )
 
     st.altair_chart(trend_chart, use_container_width=True)
 
-    with st.expander("點擊查看詳細說明", expanded=False):
+    with st.expander(t("view_details"), expanded=False):
         st.markdown(t("trend_interpretation_body"), unsafe_allow_html=True)
         st.dataframe(daily_df.tail(20), hide_index=True, use_container_width=True)

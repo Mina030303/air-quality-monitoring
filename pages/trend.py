@@ -221,12 +221,13 @@ main_chart = alt.layer(
     tooltip_points,
 ).properties(
     width="container",
+    height=300,
 )
 
 legend_df = pd.DataFrame(
     [
-        {"x1": 0.08, "x2": 0.30, "x_text": 0.34, "y": 0.72, "label": t("daily_legend"), "color": daily_color},
-        {"x1": 0.08, "x2": 0.30, "x_text": 0.34, "y": 0.42, "label": t("rolling_legend"), "color": rolling_color},
+        {"x1": 0.08, "x2": 0.30, "x_text": 0.34, "y": 0.60, "label": t("daily_legend"), "color": daily_color},
+        {"x1": 0.08, "x2": 0.30, "x_text": 0.34, "y": 0.48, "label": t("rolling_legend"), "color": rolling_color},
     ]
 )
 
@@ -252,7 +253,7 @@ legend_text = alt.Chart(legend_df).mark_text(
 legend_chart = alt.layer(
     legend_lines,
     legend_text,
-).properties(height=110, width="container")
+).properties(width="container", height=300)
 
 main_chart = (
     main_chart
@@ -260,8 +261,6 @@ main_chart = (
     .configure_view(
         strokeWidth=0,
         fill="transparent",
-        continuousWidth=900,
-        continuousHeight=600,
     )
     .configure(
         background="transparent",
@@ -273,8 +272,6 @@ legend_chart = (
     .configure_view(
         strokeWidth=0,
         fill="transparent",
-        continuousWidth=900,
-        continuousHeight=600,
     )
     .configure(
         background="transparent",

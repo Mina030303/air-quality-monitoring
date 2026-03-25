@@ -141,6 +141,10 @@ def apply_style():
             display: inline-flex !important;
             visibility: visible !important;
             opacity: 1 !important;
+            .vega-embed canvas {
+                max-width: 100% !important;
+                height: auto !important;
+            }
         }
 
         /* 隱藏 sidebar 內建 pages 導航 */
@@ -191,15 +195,8 @@ def apply_style():
             background: #f6f9fc !important;
         }
 
-        /* 手機版：語言選單改為正常流式排版，避免與標題擠在同一行 */
+        /* 手機版：語言選單維持和桌機相同的固定懸浮，只縮小尺寸 */
         @media (max-width: 768px) {
-            /* 縮小 st.title 字級，避免手機版標題擠壓 */
-            [data-testid="stHeadingWithActionElements"] h1,
-            [data-testid="stMarkdownContainer"] h1 {
-                font-size: 1.5rem !important;
-                line-height: 1.25 !important;
-            }
-
             .st-key-global_lang_select {
                 position: fixed !important;
                 top: 4.2rem !important;
@@ -235,10 +232,6 @@ def apply_style():
             .element-container div[data-testid="stVegaLiteChart"] svg {
                 width: 100% !important;
                 height: 100% !important;
-            }
-
-            h1 {
-                margin-top: 0 !important;
             }
         }
 

@@ -29,13 +29,13 @@ trend, county, hours = load_data()
 try:
     ratio_df = pd.read_csv(BASE_DIR / "output/tables/high_pollution_hour_ratio.csv")
 except Exception as e:
-    st.error(f"Failed to load overall ratio data: {e}")
+    st.error(f"{t('load_overall_ratio_failed')}: {e}")
     ratio_df = pd.DataFrame()
 
 try:
     ratio_county_df = pd.read_csv(BASE_DIR / "output/tables/high_pollution_hour_ratio_by_county.csv")
 except Exception as e:
-    st.error(f"Failed to load county ratio data: {e}")
+    st.error(f"{t('load_county_ratio_failed')}: {e}")
     ratio_county_df = pd.DataFrame()
 
 st.title(t("hours"))
@@ -91,10 +91,11 @@ if not ratio_df.empty:
         ]
     ).properties(
         background='transparent',
-        width="container"
+        width="container",
+        height=300
     ).configure_view(
-        continuousWidth=900,
-        continuousHeight=600
+        strokeWidth=0,
+        fill="transparent"
     )
     
     st.altair_chart(
@@ -158,9 +159,13 @@ if not ratio_county_df.empty and "county" in ratio_county_df.columns:
             ]
         )
 
-        county_chart = (line + selectors).properties(background='transparent', width="container").configure_view(
-            continuousWidth=900,
-            continuousHeight=600
+        county_chart = (line + selectors).properties(
+            background='transparent',
+            width="container",
+            height=300
+        ).configure_view(
+            strokeWidth=0,
+            fill="transparent"
         )
 
         st.altair_chart(
@@ -203,10 +208,11 @@ orig_chart = alt.Chart(chart_df).mark_bar(
     ]
 ).properties(
     background='transparent',
-    width="container"
+    width="container",
+    height=300
 ).configure_view(
-    continuousWidth=900,
-    continuousHeight=600
+    strokeWidth=0,
+    fill="transparent"
 )
 
 st.altair_chart(

@@ -16,7 +16,7 @@ with st.spinner(t('loading_raw_data')):
     hourly_df = load_raw_data()
 
 if hourly_df.empty:
-    st.error("No data found.")
+    st.error(t("data_not_found"))
     st.stop()
 
 
@@ -53,8 +53,13 @@ with settings_container:
                 key="spike_method_select"
             )
         with col_c:
-            counties = ["All"] + sorted(hourly_df["county"].dropna().unique().tolist()) 
-            selected_county = st.selectbox(t("spike_county_select"), counties, key="spike_county_select")
+            counties = ["__all__"] + sorted(hourly_df["county"].dropna().unique().tolist())
+            selected_county = st.selectbox(
+                t("spike_county_select"),
+                counties,
+                key="spike_county_select",
+                format_func=lambda x: t("all_option") if x == "__all__" else x,
+            )
 
         param_col1, param_col2, param_col3 = st.columns(3)
         rolling_window = param_col1.slider(t("spike_rolling_window"), 6, 72, 24, 6) 
@@ -65,7 +70,7 @@ with settings_container:
         min_val = param_col3.slider(t("spike_min_value"), 0, 100, 0, 5)
 
 # Calculate Data
-if selected_county != "All":
+if selected_county != "__all__":
     working_df = hourly_df[hourly_df["county"] == selected_county].copy()       
 else:
     working_df = hourly_df.copy()
@@ -118,7 +123,11 @@ with heatmap_container:
     heatmap_chart = alt.Chart(heatmap_df).mark_rect(cornerRadius=3).encode(
         x=alt.X("hour_label:N", title=t("hours_x_axis_label"), sort=[f"{i}:00" for i in range(24)]),
         y=alt.Y("weekday_name:O", title=t("hours_y_axis_weekday_label"), sort=[t(f"wd_{i}") for i in range(1, 8)]),
-        color=alt.Color("spike_count:Q", scale=alt.Scale(scheme="blues"), title=t("hours_spike_count_legend")),
+        color=alt.Color(
+            "spike_count:Q",
+            scale=alt.Scale(scheme="blues"),
+            legend=alt.Legend(title=t("hours_spike_count_legend"), titleAnchor="middle"),
+        ),
         tooltip=[
             alt.Tooltip("weekday_name:N", title=t("hours_tooltip_weekday")),
             alt.Tooltip("hour_label:N", title=t("hours_tooltip_hour")),
@@ -126,13 +135,12 @@ with heatmap_container:
         ]
     ).properties(
         background='transparent',
-        width="container"
+        width="container",
+        height=300
     ).configure_axis(
         grid=False
     ).configure_view(
-        strokeOpacity=0,
-        continuousWidth=900,
-        continuousHeight=600
+        strokeOpacity=0
     )
     st.altair_chart(heatmap_chart, use_container_width=True)
 
@@ -155,8 +163,8 @@ with kpi_container:
 with chart_container:
     st.subheader(t("spike_chart_title"))
 
-    chart_site = selected_county if selected_county != "All" else top_site
-    plot_df = working_df[working_df["sitename"] == top_site] if selected_county == "All" else working_df                                                            
+    chart_site = selected_county if selected_county != "__all__" else top_site
+    plot_df = working_df[working_df["sitename"] == top_site] if selected_county == "__all__" else working_df                                                            
     
     base_line = alt.Chart(plot_df).mark_line(opacity=0.4, color='#6B7280').encode(  
         x=alt.X("datacreationdate:T", title=t("date_label")),
@@ -165,7 +173,7 @@ with chart_container:
         tooltip=["sitename", "datacreationdate", pollutant]
     )
 
-    plot_spikes_df = spikes_df[spikes_df["sitename"] == top_site] if selected_county == "All" else spikes_df                                                        
+    plot_spikes_df = spikes_df[spikes_df["sitename"] == top_site] if selected_county == "__all__" else spikes_df                                                        
     spike_points = alt.Chart(plot_spikes_df).mark_circle(size=80, color='#EF4444').encode(
         x=alt.X("datacreationdate:T", title=""),
         y=alt.Y(f"{pollutant}:Q", title=""),
@@ -179,7 +187,8 @@ with chart_container:
 
     combined_chart = (base_line + spike_points).properties(
         background='transparent',
-        width="container"
+        width="container",
+        height=300
     )
     st.altair_chart(combined_chart, use_container_width=True)
 

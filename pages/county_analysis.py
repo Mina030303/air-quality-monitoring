@@ -16,7 +16,7 @@ trend, county, hours = load_data()
 with st.spinner(t('loading_analysis')):
     hourly_df = load_raw_data()
     if hourly_df.empty:
-        st.warning("Data not found.")
+        st.warning(t("data_not_found"))
         st.stop()
     stability_df = cached_analyze_county_stability(hourly_df)
 
@@ -69,7 +69,11 @@ good_df = stability_df[
 st.caption(t("county_how_to_read_body"))
 
 # ===== 縣市圖表與詳細指標（Tabs 組織）=====
-tab_overview, tab_metrics, tab_data = st.tabs(["概覽圖", "單一指標", "完整數據"])
+tab_overview, tab_metrics, tab_data = st.tabs([
+    t("county_tab_overview"),
+    t("county_tab_metrics"),
+    t("county_tab_data"),
+])
 
 with tab_overview:
     # ===== 頂部資訊容器 =====
@@ -218,10 +222,10 @@ with tab_overview:
 
     risk_chart = (
         alt.layer(risk_points, risk_labels_left, risk_labels_right)
-        .properties(width="container", padding={"right": 70, "left": 10, "top": 10, "bottom": 10})
+        .properties(width="container", height=300, padding={"right": 70, "left": 10, "top": 10, "bottom": 10})
         .interactive()
         .configure_axis(grid=True, gridColor="#d8e2ec")
-        .configure_view(strokeWidth=0, fill="transparent", continuousWidth=900, continuousHeight=600)
+        .configure_view(strokeWidth=0, fill="transparent")
         .configure(background="transparent")
     )
 
@@ -246,12 +250,12 @@ with tab_metrics:
                 x=alt.X("mean_aqi:Q", title=t("county_mean_aqi")),
                 tooltip=[
                     alt.Tooltip("county:N", title=t("county")),
-                    alt.Tooltip("mean_aqi:Q", title="Mean AQI", format=".2f"),
+                    alt.Tooltip("mean_aqi:Q", title=t("county_mean_aqi"), format=".2f"),
                 ],
             )
-            .properties(width="container")
+            .properties(width="container", height=300)
             .configure_axis(grid=True, gridColor="#d8e2ec")
-            .configure_view(strokeWidth=0, fill="transparent", continuousWidth=900, continuousHeight=600)
+            .configure_view(strokeWidth=0, fill="transparent")
             .configure(background="transparent")
         )
         st.altair_chart(mean_chart, use_container_width=True)
@@ -266,12 +270,12 @@ with tab_metrics:
                 x=alt.X("std_aqi:Q", title=t("county_std_aqi")),
                 tooltip=[
                     alt.Tooltip("county:N", title=t("county")),
-                    alt.Tooltip("std_aqi:Q", title="Std AQI", format=".2f"),
+                    alt.Tooltip("std_aqi:Q", title=t("county_std_aqi"), format=".2f"),
                 ],
             )
-            .properties(width="container")
+            .properties(width="container", height=300)
             .configure_axis(grid=True, gridColor="#d8e2ec")
-            .configure_view(strokeWidth=0, fill="transparent", continuousWidth=900, continuousHeight=600)
+            .configure_view(strokeWidth=0, fill="transparent")
             .configure(background="transparent")
         )
         st.altair_chart(std_chart, use_container_width=True)
@@ -285,12 +289,12 @@ with tab_metrics:
             x=alt.X("high_pollution_ratio:Q", title=t("county_high_pol_ratio"), axis=alt.Axis(format="%")),
             tooltip=[
                 alt.Tooltip("county:N", title=t("county")),
-                alt.Tooltip("high_pollution_ratio:Q", title="High Pollution Ratio", format=".2%"),
+                alt.Tooltip("high_pollution_ratio:Q", title=t("county_high_pol_ratio"), format=".2%"),
             ],
         )
-        .properties(height=280, width="container")
+        .properties(width="container", height=300)
         .configure_axis(grid=True, gridColor="#d8e2ec")
-        .configure_view(strokeWidth=0, fill="transparent", continuousWidth=900, continuousHeight=600)
+        .configure_view(strokeWidth=0, fill="transparent")
         .configure(background="transparent")
     )
     st.altair_chart(ratio_chart, use_container_width=True)
@@ -311,8 +315,8 @@ with tab_data:
                 "county": t("county"),
                 "mean_aqi": t("county_mean_aqi"),
                 "std_aqi": t("county_std_aqi"),
-                "high_pollution_ratio": "高污染比例(%)",
-                "total_count": "觀測總數",
+                "high_pollution_ratio": f"{t('county_high_pol_ratio')}(%)",
+                "total_count": t("county_total_count"),
             }
         ),
         use_container_width=True,
@@ -357,7 +361,7 @@ with col_good:
 # ===== 詳細資訊 Expander =====
 st.markdown("---")
 
-with st.expander("詳細資訊", expanded=False):
+with st.expander(t("details_info"), expanded=False):
     st.markdown(f"#### {t('county_name_comparison')}")
     
     county_ref_df = pd.DataFrame(
@@ -397,13 +401,13 @@ with st.expander("詳細資訊", expanded=False):
     
     st.markdown(f"#### {t('classification_criteria')}")
     st.markdown(f"""
-    **高風險縣市**：
-    - 平均 AQI > {AQI_RISK_THRESHOLD}，且
-    - 同時滿足：平均 AQI > {mean_avg:.1f} 或 波動度 > {std_avg:.2f}
-    
-    **優良縣市**：
-    - 平均 AQI < {AQI_GOOD_THRESHOLD}，或
-    - {AQI_GOOD_THRESHOLD} ≤ 平均 AQI < {mean_avg:.1f} 且 高污染比例 = 0%
+    **{t('county_high_risk_criteria_label')}**：
+    - {t('county_high_risk_criteria_line1').format(risk_threshold=AQI_RISK_THRESHOLD)}
+    - {t('county_high_risk_criteria_line2').format(mean_avg=mean_avg, std_avg=std_avg)}
+
+    **{t('county_good_criteria_label')}**：
+    - {t('county_good_criteria_line1').format(good_threshold=AQI_GOOD_THRESHOLD)}
+    - {t('county_good_criteria_line2').format(good_threshold=AQI_GOOD_THRESHOLD, mean_avg=mean_avg)}
     """)
     
     st.markdown(f"#### {t('raw_data_preview')}")
@@ -415,8 +419,8 @@ with st.expander("詳細資訊", expanded=False):
             "county": t("county"),
             "mean_aqi": t("county_mean_aqi"),
             "std_aqi": t("county_std_aqi"),
-            "high_pollution_ratio": "高污染比例",
-            "total_count": "觀測總數",
+            "high_pollution_ratio": t("county_high_pol_ratio"),
+            "total_count": t("county_total_count"),
         }
     )
     
