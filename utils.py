@@ -201,29 +201,40 @@ def apply_style():
             }
 
             .st-key-global_lang_select {
-                position: static !important;
-                top: auto !important;
-                right: auto !important;
-                width: 100% !important;
-                margin: 0 auto 0.9rem auto !important;
-                z-index: auto !important;
+                position: fixed !important;
+                top: 4.2rem !important;
+                right: 5rem !important;
+                width: 82px !important;
+                margin: 0 !important;
+                z-index: 100000 !important;
             }
 
             .st-key-global_lang_select div[data-baseweb="select"] {
-                min-width: 100% !important;
-                width: 100% !important;
+                min-width: 82px !important;
+                width: 82px !important;
             }
 
             .st-key-global_lang_select div[data-baseweb="select"] > div {
+                width: 82px !important;
+                min-height: 30px !important;
+                height: 30px !important;
+                padding: 0 6px !important;
+            }
+
+            .st-key-global_lang_select div[data-baseweb="select"] span {
+                font-size: 12px !important;
+            }
+
+            /* 手機版鎖定 Altair 圖表比例，避免過度拉伸 */
+            .element-container div[data-testid="stVegaLiteChart"] > div {
                 width: 100% !important;
+                aspect-ratio: 16 / 9;
             }
 
-            .block-container {
-                padding-top: 1.25rem !important;
-            }
-
-            div[data-testid="stTabs"] {
-                padding-top: 0.35rem !important;
+            .element-container div[data-testid="stVegaLiteChart"] canvas,
+            .element-container div[data-testid="stVegaLiteChart"] svg {
+                width: 100% !important;
+                height: 100% !important;
             }
 
             h1 {

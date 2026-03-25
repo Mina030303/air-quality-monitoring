@@ -200,7 +200,6 @@ with tab_spike:
                     alt.Tooltip("spike_count:Q", title=t("hours_spike_count_legend")),
                 ],
             )
-            .properties(height=280)
             .configure_axis(grid=True, gridColor="#d8e2ec")
             .configure_view(strokeWidth=0, fill="transparent")
             .configure(background="transparent")
@@ -255,7 +254,6 @@ with tab_trend:
                 alt.Tooltip("value:Q", title=t("aqi_value_label"), format=".2f"),
             ],
         )
-        .properties(height=MOBILE_CHART_HEIGHT)
         .configure_axis(grid=True, gridColor="#d8e2ec")
         .configure_view(strokeWidth=0, fill="transparent")
         .configure(background="transparent")

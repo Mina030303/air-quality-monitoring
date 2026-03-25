@@ -220,7 +220,6 @@ main_chart = alt.layer(
     visible_points,
     tooltip_points,
 ).properties(
-    height=420,
     width="container",
 )
 

@@ -144,6 +144,7 @@ with tab_overview:
                 "high_pollution_ratio:Q",
                 title=t("county_high_pol_ratio"),
                 scale=alt.Scale(range=[90, 850]),
+                legend=None,
             ),
             color=alt.Color(
                 "high_pollution_ratio:Q",
@@ -220,7 +221,7 @@ with tab_overview:
 
     risk_chart = (
         alt.layer(risk_points, risk_labels_left, risk_labels_right)
-        .properties(height=MOBILE_CHART_HEIGHT, width="container", padding={"right": 70, "left": 10, "top": 10, "bottom": 10})
+        .properties(width="container", padding={"right": 70, "left": 10, "top": 10, "bottom": 10})
         .interactive()
         .configure_axis(grid=True, gridColor="#d8e2ec")
         .configure_view(strokeWidth=0, fill="transparent")

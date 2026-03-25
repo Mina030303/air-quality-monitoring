@@ -176,7 +176,6 @@ with chart_container:
     )
 
     combined_chart = (base_line + spike_points).properties(
-        height=400,
         background='transparent'
     )
     st.altair_chart(combined_chart, use_container_width=True)
