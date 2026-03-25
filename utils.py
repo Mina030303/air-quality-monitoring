@@ -274,8 +274,8 @@ def apply_style():
                 max-width: none !important;
                 margin-left: -0.8rem !important;
                 margin-right: -0.8rem !important;
-                aspect-ratio: 2 / 1 !important;
-                height: auto !important;
+                aspect-ratio: auto !important;
+                height: clamp(200px, 38vw, 280px) !important;
                 min-height: 0 !important;
             }
 
