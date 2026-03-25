@@ -220,7 +220,7 @@ with tab_overview:
 
     risk_chart = (
         alt.layer(risk_points, risk_labels_left, risk_labels_right)
-        .properties(height=MOBILE_CHART_HEIGHT, padding={"right": 70, "left": 10, "top": 10, "bottom": 10})
+        .properties(height=MOBILE_CHART_HEIGHT, width="container", padding={"right": 70, "left": 10, "top": 10, "bottom": 10})
         .interactive()
         .configure_axis(grid=True, gridColor="#d8e2ec")
         .configure_view(strokeWidth=0, fill="transparent")
@@ -281,7 +281,7 @@ with tab_metrics:
     st.markdown(f"**{t('high_pollution_ratio_ranking')}**")
     ratio_chart = (
         alt.Chart(ratio_sorted)
-        .mark_bar(color="#F4A259", cornerRadiusTopLeft=3, cornerRadiusTopRight=3)
+        .mark_bar(color="#5A9BD5", cornerRadiusTopLeft=3, cornerRadiusTopRight=3)
         .encode(
             y=alt.Y("county:N", sort=None, title=""),
             x=alt.X("high_pollution_ratio:Q", title=t("county_high_pol_ratio"), axis=alt.Axis(format="%")),

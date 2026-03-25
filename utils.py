@@ -193,12 +193,19 @@ def apply_style():
 
         /* 手機版：語言選單改為正常流式排版，避免與標題擠在同一行 */
         @media (max-width: 768px) {
+            /* 縮小 st.title 字級，避免手機版標題擠壓 */
+            [data-testid="stHeadingWithActionElements"] h1,
+            [data-testid="stMarkdownContainer"] h1 {
+                font-size: 1.5rem !important;
+                line-height: 1.25 !important;
+            }
+
             .st-key-global_lang_select {
                 position: static !important;
                 top: auto !important;
                 right: auto !important;
                 width: 100% !important;
-                margin: 0 0 0.65rem 0 !important;
+                margin: 0 auto 0.9rem auto !important;
                 z-index: auto !important;
             }
 
@@ -209,6 +216,14 @@ def apply_style():
 
             .st-key-global_lang_select div[data-baseweb="select"] > div {
                 width: 100% !important;
+            }
+
+            .block-container {
+                padding-top: 1.25rem !important;
+            }
+
+            div[data-testid="stTabs"] {
+                padding-top: 0.35rem !important;
             }
 
             h1 {

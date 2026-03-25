@@ -221,13 +221,13 @@ main_chart = alt.layer(
     tooltip_points,
 ).properties(
     height=420,
-    width=860,
+    width="container",
 )
 
 legend_df = pd.DataFrame(
     [
-        {"x1": 0.00, "x2": 0.14, "y": 0.88, "label": t("daily_legend"), "color": daily_color},
-        {"x1": 0.00, "x2": 0.14, "y": 0.80, "label": t("rolling_legend"), "color": rolling_color},
+        {"x1": 0.08, "x2": 0.30, "x_text": 0.34, "y": 0.72, "label": t("daily_legend"), "color": daily_color},
+        {"x1": 0.08, "x2": 0.30, "x_text": 0.34, "y": 0.42, "label": t("rolling_legend"), "color": rolling_color},
     ]
 )
 
@@ -240,11 +240,11 @@ legend_lines = alt.Chart(legend_df).mark_rule(strokeWidth=2.6).encode(
 
 legend_text = alt.Chart(legend_df).mark_text(
     align="left",
-    dx=6,
+    dx=0,
     fontSize=13,
     fontWeight="bold",
 ).encode(
-    x=alt.X("x2:Q", axis=None, scale=alt.Scale(domain=[0, 1])),
+    x=alt.X("x_text:Q", axis=None, scale=alt.Scale(domain=[0, 1])),
     y=alt.Y("y:Q", axis=None, scale=alt.Scale(domain=[0, 1])),
     text="label:N",
     color=alt.Color("color:N", scale=None, legend=None),
@@ -253,11 +253,10 @@ legend_text = alt.Chart(legend_df).mark_text(
 legend_chart = alt.layer(
     legend_lines,
     legend_text,
-).properties(height=420, width=135)
+).properties(height=110, width="container")
 
-combined_chart = (
-    alt.hconcat(main_chart, legend_chart, spacing=14)
-    .resolve_scale(color="independent")
+main_chart = (
+    main_chart
     .configure_axis(gridColor="#cfd9e2")
     .configure_view(
         strokeWidth=0,
@@ -268,7 +267,24 @@ combined_chart = (
     )
 )
 
-st.altair_chart(combined_chart, use_container_width=True)
+legend_chart = (
+    legend_chart
+    .configure_view(
+        strokeWidth=0,
+        fill="transparent",
+    )
+    .configure(
+        background="transparent",
+    )
+)
+
+chart_col, legend_col = st.columns([6, 1], vertical_alignment="top")
+
+with chart_col:
+    st.altair_chart(main_chart, use_container_width=True)
+
+with legend_col:
+    st.altair_chart(legend_chart, use_container_width=True)
 
 render_aqi_meaning_block()
 
