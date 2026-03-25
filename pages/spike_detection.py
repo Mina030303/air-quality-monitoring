@@ -135,8 +135,7 @@ with heatmap_container:
         ]
     ).properties(
         background='transparent',
-        width="container",
-        height=360
+        width="container"
     ).configure_axis(
         grid=False
     ).configure_view(

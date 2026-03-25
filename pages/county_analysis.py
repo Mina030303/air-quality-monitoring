@@ -222,7 +222,7 @@ with tab_overview:
 
     risk_chart = (
         alt.layer(risk_points, risk_labels_left, risk_labels_right)
-        .properties(width="container", height=380, padding={"right": 70, "left": 10, "top": 10, "bottom": 10})
+        .properties(width="container", padding={"right": 70, "left": 10, "top": 10, "bottom": 10})
         .interactive()
         .configure_axis(grid=True, gridColor="#d8e2ec")
         .configure_view(strokeWidth=0, fill="transparent")
