@@ -204,7 +204,8 @@ def apply_style():
 
         /* 手機版字級調整並為右上懸浮按鈕預留視覺空間 */
         @media (max-width: 768px) {
-            .st-key-global_lang_select {
+            .st-key-global_lang_select,
+            .st-key-global_lang_select div[data-testid="stSelectbox"] {
                 position: fixed !important;
                 top: 0.35rem !important;
                 right: 0.55rem !important;
@@ -212,6 +213,7 @@ def apply_style():
                 transform: scale(0.9) !important;
                 transform-origin: top right !important;
                 z-index: 100200 !important;
+                margin: 0 !important;
             }
 
             .st-key-global_lang_select div[data-baseweb="select"] {
@@ -228,10 +230,16 @@ def apply_style():
                 font-size: 12px !important;
             }
 
+            [data-testid="stVegaLiteChart"],
+            [data-testid="stVegaLiteChart"] > div,
             [data-testid="stVegaLiteChart"] .vega-embed,
+            .element-container [data-testid="stVegaLiteChart"],
+            .element-container [data-testid="stVegaLiteChart"] > div,
             .element-container [data-testid="stVegaLiteChart"] .vega-embed {
+                width: 100% !important;
                 aspect-ratio: 3 / 2 !important;
                 height: auto !important;
+                min-height: 0 !important;
             }
 
             [data-testid="stVegaLiteChart"] canvas,
