@@ -104,7 +104,7 @@ with tab_risk:
                 alt.Tooltip("high_pollution_ratio:Q", title=t("county_high_pol_ratio"), format=".1%"),
             ],
         )
-        .properties(width="container", height=300)
+        .properties(width="container")
         .configure_axis(grid=True, gridColor="#d8e2ec")
         .configure_view(strokeWidth=0, fill="transparent")
         .configure(background="transparent")
@@ -171,7 +171,7 @@ with tab_spike:
                     alt.Tooltip("spike_count:Q", title=t("spike_total_count")),
                 ],
             )
-            .properties(width="container", height=300)
+            .properties(width="container")
             .configure_axis(grid=True, gridColor="#d8e2ec")
             .configure_view(strokeWidth=0, fill="transparent")
             .configure(background="transparent")
@@ -197,7 +197,7 @@ with tab_spike:
                     alt.Tooltip("spike_count:Q", title=t("hours_spike_count_legend")),
                 ],
             )
-            .properties(width="container", height=300)
+            .properties(width="container")
             .configure_axis(grid=True, gridColor="#d8e2ec")
             .configure_view(strokeWidth=0, fill="transparent")
             .configure(background="transparent")
@@ -252,7 +252,7 @@ with tab_trend:
                 alt.Tooltip("value:Q", title=t("aqi_value_label"), format=".2f"),
             ],
         )
-        .properties(width="container", height=300)
+        .properties(width="container")
         .configure_axis(grid=True, gridColor="#d8e2ec")
         .configure_view(strokeWidth=0, fill="transparent")
         .configure(background="transparent")

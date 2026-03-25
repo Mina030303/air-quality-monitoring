@@ -221,7 +221,6 @@ main_chart = alt.layer(
     tooltip_points,
 ).properties(
     width="container",
-    height=300,
 )
 
 legend_df = pd.DataFrame(
@@ -253,7 +252,7 @@ legend_text = alt.Chart(legend_df).mark_text(
 legend_chart = alt.layer(
     legend_lines,
     legend_text,
-).properties(width="container", height=300)
+).properties(width="container")
 
 main_chart = (
     main_chart

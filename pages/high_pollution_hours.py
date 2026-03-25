@@ -91,8 +91,7 @@ if not ratio_df.empty:
         ]
     ).properties(
         background='transparent',
-        width="container",
-        height=300
+        width="container"
     ).configure_view(
         strokeWidth=0,
         fill="transparent"
@@ -161,8 +160,7 @@ if not ratio_county_df.empty and "county" in ratio_county_df.columns:
 
         county_chart = (line + selectors).properties(
             background='transparent',
-            width="container",
-            height=300
+            width="container"
         ).configure_view(
             strokeWidth=0,
             fill="transparent"
@@ -208,8 +206,7 @@ orig_chart = alt.Chart(chart_df).mark_bar(
     ]
 ).properties(
     background='transparent',
-    width="container",
-    height=300
+    width="container"
 ).configure_view(
     strokeWidth=0,
     fill="transparent"

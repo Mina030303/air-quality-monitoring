@@ -222,7 +222,7 @@ with tab_overview:
 
     risk_chart = (
         alt.layer(risk_points, risk_labels_left, risk_labels_right)
-        .properties(width="container", height=300, padding={"right": 70, "left": 10, "top": 10, "bottom": 10})
+        .properties(width="container", padding={"right": 70, "left": 10, "top": 10, "bottom": 10})
         .interactive()
         .configure_axis(grid=True, gridColor="#d8e2ec")
         .configure_view(strokeWidth=0, fill="transparent")
@@ -253,7 +253,7 @@ with tab_metrics:
                     alt.Tooltip("mean_aqi:Q", title=t("county_mean_aqi"), format=".2f"),
                 ],
             )
-            .properties(width="container", height=300)
+            .properties(width="container")
             .configure_axis(grid=True, gridColor="#d8e2ec")
             .configure_view(strokeWidth=0, fill="transparent")
             .configure(background="transparent")
@@ -273,7 +273,7 @@ with tab_metrics:
                     alt.Tooltip("std_aqi:Q", title=t("county_std_aqi"), format=".2f"),
                 ],
             )
-            .properties(width="container", height=300)
+            .properties(width="container")
             .configure_axis(grid=True, gridColor="#d8e2ec")
             .configure_view(strokeWidth=0, fill="transparent")
             .configure(background="transparent")
@@ -292,7 +292,7 @@ with tab_metrics:
                 alt.Tooltip("high_pollution_ratio:Q", title=t("county_high_pol_ratio"), format=".2%"),
             ],
         )
-        .properties(width="container", height=300)
+        .properties(width="container")
         .configure_axis(grid=True, gridColor="#d8e2ec")
         .configure_view(strokeWidth=0, fill="transparent")
         .configure(background="transparent")

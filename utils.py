@@ -141,10 +141,6 @@ def apply_style():
             display: inline-flex !important;
             visibility: visible !important;
             opacity: 1 !important;
-            .vega-embed canvas {
-                max-width: 100% !important;
-                height: auto !important;
-            }
         }
 
         /* 隱藏 sidebar 內建 pages 導航 */
@@ -156,38 +152,49 @@ def apply_style():
             padding-top: 1rem;
         }
 
-        /* 把語言選單固定到右上角，避免被 header 蓋住 */
+        /* 翻譯按鈕懸浮化 */
         .st-key-global_lang_select {
             position: fixed !important;
             top: 4.2rem !important;
             right: 5rem !important;
-            width: 110px !important;
-            z-index: 99999 !important;
+            width: 108px !important;
+            z-index: 100100 !important;
             margin: 0 !important;
         }
 
         /* 語言選單的內部樣式 */
         .st-key-global_lang_select div[data-baseweb="select"] {
-            min-width: 100px !important;
+            min-width: 108px !important;
+            width: 108px !important;
             cursor: pointer !important;          /* 滑鼠變手指 */
             position: relative !important;
-            z-index: 99999 !important;
+            z-index: 100100 !important;
         }
 
         .st-key-global_lang_select div[data-baseweb="select"] > div {
-            min-height: 34px !important;
-            height: 34px !important;
+            min-height: 36px !important;
+            height: 36px !important;
             border-radius: 10px !important;
             border: 1px solid #c9d7e3 !important;
             background: #ffffff !important;
             box-shadow: none !important;
-            padding: 0 8px !important;           /* 左右收緊 */
+            padding: 0 6px !important;           /* 左右收緊 */
             cursor: pointer !important;
         }
 
         .st-key-global_lang_select div[data-baseweb="select"] span {
-            font-size: 14px !important;
+            font-size: 13px !important;
             cursor: pointer !important;
+        }
+
+        .vega-embed {
+            aspect-ratio: auto !important;
+            height: auto !important;
+        }
+
+        .vega-embed canvas {
+            max-width: 100% !important;
+            height: auto !important;
         }
 
         .st-key-global_lang_select div[data-baseweb="select"]:hover > div {
@@ -195,43 +202,18 @@ def apply_style():
             background: #f6f9fc !important;
         }
 
-        /* 手機版：語言選單維持和桌機相同的固定懸浮，只縮小尺寸 */
+        /* 手機版字級調整並為右上懸浮按鈕預留視覺空間 */
         @media (max-width: 768px) {
-            .st-key-global_lang_select {
-                position: fixed !important;
-                top: 4.2rem !important;
-                right: 5rem !important;
-                width: 82px !important;
-                margin: 0 !important;
-                z-index: 100000 !important;
+            .vega-embed {
+                aspect-ratio: 3 / 2 !important;
+                height: auto !important;
             }
 
-            .st-key-global_lang_select div[data-baseweb="select"] {
-                min-width: 82px !important;
-                width: 82px !important;
-            }
-
-            .st-key-global_lang_select div[data-baseweb="select"] > div {
-                width: 82px !important;
-                min-height: 30px !important;
-                height: 30px !important;
-                padding: 0 6px !important;
-            }
-
-            .st-key-global_lang_select div[data-baseweb="select"] span {
-                font-size: 12px !important;
-            }
-
-            /* 手機版鎖定 Altair 圖表比例，避免過度拉伸 */
-            .element-container div[data-testid="stVegaLiteChart"] > div {
-                width: 100% !important;
-                aspect-ratio: 16 / 9;
-            }
-
-            .element-container div[data-testid="stVegaLiteChart"] canvas,
-            .element-container div[data-testid="stVegaLiteChart"] svg {
-                width: 100% !important;
-                height: 100% !important;
+            [data-testid="stHeadingWithActionElements"] h1,
+            [data-testid="stMarkdownContainer"] h1 {
+                font-size: 1.3rem !important;
+                line-height: 1.25 !important;
+                padding-right: 70px !important;
             }
         }
 
