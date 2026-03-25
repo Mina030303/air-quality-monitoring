@@ -233,8 +233,8 @@ def apply_style():
             }
 
             .block-container {
-                padding-left: 0.35rem !important;
-                padding-right: 0.35rem !important;
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
             }
 
             .st-key-global_lang_select,
@@ -265,16 +265,15 @@ def apply_style():
 
             /* 手機版：圖表改為更寬的 2:1 比例 */
             [data-testid="stVegaLiteChart"],
-            .element-container:has([data-testid="stVegaLiteChart"]),
             [data-testid="stVegaLiteChart"] > div,
             [data-testid="stVegaLiteChart"] .vega-embed,
             .element-container [data-testid="stVegaLiteChart"],
             .element-container [data-testid="stVegaLiteChart"] > div,
             .element-container [data-testid="stVegaLiteChart"] .vega-embed {
-                width: calc(100% + 0.8rem) !important;
+                width: calc(100% + 1.6rem) !important;
                 max-width: none !important;
-                margin-left: -0.4rem !important;
-                margin-right: -0.4rem !important;
+                margin-left: -0.8rem !important;
+                margin-right: -0.8rem !important;
                 aspect-ratio: 2 / 1 !important;
                 height: auto !important;
                 min-height: 0 !important;
