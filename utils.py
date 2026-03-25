@@ -197,6 +197,12 @@ def apply_style():
             height: auto !important;
         }
 
+        .vega-embed .vega-actions,
+        .vega-embed details,
+        .vega-embed summary {
+            display: none !important;
+        }
+
         .st-key-global_lang_select div[data-baseweb="select"]:hover > div {
             border-color: #9fb8cf !important;
             background: #f6f9fc !important;
@@ -207,7 +213,7 @@ def apply_style():
             .st-key-global_lang_select,
             .st-key-global_lang_select div[data-testid="stSelectbox"] {
                 position: fixed !important;
-                top: 0.35rem !important;
+                top: 2.25rem !important;
                 right: 0.55rem !important;
                 width: 92px !important;
                 transform: scale(0.9) !important;
@@ -230,6 +236,7 @@ def apply_style():
                 font-size: 12px !important;
             }
 
+            /* 手機版：圖表改為更寬的 16:9 比例 */
             [data-testid="stVegaLiteChart"],
             [data-testid="stVegaLiteChart"] > div,
             [data-testid="stVegaLiteChart"] .vega-embed,
@@ -237,7 +244,7 @@ def apply_style():
             .element-container [data-testid="stVegaLiteChart"] > div,
             .element-container [data-testid="stVegaLiteChart"] .vega-embed {
                 width: 100% !important;
-                aspect-ratio: 3 / 2 !important;
+                aspect-ratio: 16 / 9 !important;
                 height: auto !important;
                 min-height: 0 !important;
             }

@@ -220,7 +220,7 @@ main_chart = alt.layer(
     visible_points,
     tooltip_points,
 ).properties(
-    width="container",
+    width=760,
 )
 
 legend_df = pd.DataFrame(
@@ -252,10 +252,11 @@ legend_text = alt.Chart(legend_df).mark_text(
 legend_chart = alt.layer(
     legend_lines,
     legend_text,
-).properties(width="container")
+).properties(width=160, height=220)
 
-main_chart = (
-    main_chart
+combined_chart = (
+    alt.hconcat(main_chart, legend_chart, spacing=10)
+    .resolve_scale(color="independent")
     .configure_axis(gridColor="#cfd9e2")
     .configure_view(
         strokeWidth=0,
@@ -265,25 +266,7 @@ main_chart = (
         background="transparent",
     )
 )
-
-legend_chart = (
-    legend_chart
-    .configure_view(
-        strokeWidth=0,
-        fill="transparent",
-    )
-    .configure(
-        background="transparent",
-    )
-)
-
-chart_col, legend_col = st.columns([6, 1], vertical_alignment="top")
-
-with chart_col:
-    st.altair_chart(main_chart, use_container_width=True)
-
-with legend_col:
-    st.altair_chart(legend_chart, use_container_width=True)
+st.altair_chart(combined_chart, use_container_width=True)
 
 render_aqi_meaning_block()
 
