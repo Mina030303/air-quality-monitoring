@@ -220,7 +220,7 @@ main_chart = alt.layer(
     visible_points,
     tooltip_points,
 ).properties(
-    width=760,
+    width="container",
 )
 
 legend_df = pd.DataFrame(
@@ -252,7 +252,7 @@ legend_text = alt.Chart(legend_df).mark_text(
 legend_chart = alt.layer(
     legend_lines,
     legend_text,
-).properties(width=160, height=220)
+).properties(width=150, height=170)
 
 combined_chart = (
     alt.hconcat(main_chart, legend_chart, spacing=10)

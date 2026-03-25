@@ -204,14 +204,17 @@ def apply_style():
             cursor: pointer !important;
         }
 
-        .vega-embed {
-            aspect-ratio: auto !important;
+        [data-testid="stVegaLiteChart"] .vega-embed {
+            width: 100% !important;
+            max-width: 100% !important;
+            aspect-ratio: 16 / 8 !important;
             height: auto !important;
         }
 
-        .vega-embed canvas {
-            max-width: 100% !important;
-            height: auto !important;
+        [data-testid="stVegaLiteChart"] canvas,
+        [data-testid="stVegaLiteChart"] svg {
+            width: 100% !important;
+            height: 100% !important;
         }
 
         .vega-embed .vega-actions,
@@ -263,7 +266,7 @@ def apply_style():
                 font-size: 12px !important;
             }
 
-            /* 手機版：圖表改為更寬的 2:1 比例 */
+            /* 手機版：維持比例縮放，不使用固定高度 */
             [data-testid="stVegaLiteChart"],
             [data-testid="stVegaLiteChart"] > div,
             [data-testid="stVegaLiteChart"] .vega-embed,
@@ -274,8 +277,8 @@ def apply_style():
                 max-width: none !important;
                 margin-left: -0.8rem !important;
                 margin-right: -0.8rem !important;
-                aspect-ratio: auto !important;
-                height: clamp(200px, 38vw, 280px) !important;
+                aspect-ratio: 16 / 10 !important;
+                height: auto !important;
                 min-height: 0 !important;
             }
 
