@@ -37,12 +37,20 @@ def fetch_hourly_aqi(api_key: str | None = None, timeout: int = 20) -> list[dict
         print(f"[WARN] Invalid JSON response, skip this run: {exc}")
         return []
 
-    records = payload.get("records", [])
+    if isinstance(payload, list):
+        records = payload
+    elif isinstance(payload, dict):
+        records = payload.get("records", [])
+    else:
+        print("[WARN] Unexpected API payload type, skip this run.")
+        return []
+
     if not isinstance(records, list):
         print("[WARN] Unexpected API payload structure, skip this run.")
         return []
 
-    return records
+    # Keep only object-like rows to avoid writer failures on malformed elements.
+    return [row for row in records if isinstance(row, dict)]
 
 
 def save_to_csv(records: list[dict], output_path: Path = OUTPUT_PATH) -> None:
