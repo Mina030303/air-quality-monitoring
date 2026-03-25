@@ -2,19 +2,24 @@ name: Hourly Data Update
 
 on:
   schedule:
-    # 每小時的第 5 分鐘執行一次 (以免跟 API 更新尖峰撞期)
-    - cron: '5 * * * *'
-  workflow_dispatch: # 允許手動點擊按鈕執行
+    # 每天凌晨 02:05 執行 (台北時間 UTC+8)
+    - cron: '5 18 * * *'
+  workflow_dispatch: 
 
 jobs:
   update_data:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # 💡 確保有權限推送到 data 資料夾
+      
     steps:
+      # 升級到 v4 以上以支援 Node.js 24
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
+      # 升級到 v5 以上以支援 Node.js 24
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
@@ -24,11 +29,21 @@ jobs:
           pip install pandas requests
 
       - name: Run Crawler
-        run: python crawler.py  
+        run: python crawler.py
 
       - name: Commit and Push if data changed
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add data/*.csv
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Update hourly data $(date)" && git push)
+          
+          # 建立資料夾並確保 git 追蹤到新檔案
+          mkdir -p data
+          git add data/hourly_aqi.csv
+          
+          # 檢查是否有變動，有的話才提交
+          if [ -n "$(git status --porcelain)" ]; then
+            git commit -m "Update hourly data $(date)"
+            git push
+          else
+            echo "No changes to commit"
+          fi
