@@ -235,18 +235,18 @@ def apply_style():
             .st-key-global_lang_select,
             .st-key-global_lang_select div[data-testid="stSelectbox"] {
                 position: fixed !important;
-                top: calc(env(safe-area-inset-top, 0px) + 5.6rem) !important;
+                top: calc(env(safe-area-inset-top, 0px) + 1.1rem) !important;
                 right: 0.55rem !important;
-                width: 92px !important;
-                transform: scale(0.9) !important;
+                width: 124px !important;
+                transform: scale(0.96) !important;
                 transform-origin: top right !important;
                 z-index: 100200 !important;
                 margin: 0 !important;
             }
 
             .st-key-global_lang_select div[data-baseweb="select"] {
-                min-width: 92px !important;
-                width: 92px !important;
+                min-width: 124px !important;
+                width: 124px !important;
             }
 
             .st-key-global_lang_select div[data-baseweb="select"] > div {
@@ -265,8 +265,11 @@ def apply_style():
             .element-container [data-testid="stVegaLiteChart"],
             .element-container [data-testid="stVegaLiteChart"] > div,
             .element-container [data-testid="stVegaLiteChart"] .vega-embed {
-                width: 100% !important;
-                aspect-ratio: 2 / 1 !important;
+                width: calc(100vw - 1.1rem) !important;
+                max-width: none !important;
+                margin-left: -0.3rem !important;
+                margin-right: -0.3rem !important;
+                aspect-ratio: 2.4 / 1 !important;
                 height: auto !important;
                 min-height: 0 !important;
             }
