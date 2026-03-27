@@ -11,6 +11,7 @@ from utils import (
     render_global_sidebar,
     render_back_home_button,
     load_data,
+    load_hourly_risk_data,
     t,
     BASE_DIR,
 )
@@ -25,18 +26,7 @@ COUNTY_POINT_BLUE = "#1F4E8C"
 ORIGINAL_COUNT_BLUE = "#5A9BD5"
 
 trend, county, hours = load_data()
-
-try:
-    ratio_df = pd.read_csv(BASE_DIR / "output/tables/high_pollution_hour_ratio.csv")
-except Exception as e:
-    st.error(f"{t('load_overall_ratio_failed')}: {e}")
-    ratio_df = pd.DataFrame()
-
-try:
-    ratio_county_df = pd.read_csv(BASE_DIR / "output/tables/high_pollution_hour_ratio_by_county.csv")
-except Exception as e:
-    st.error(f"{t('load_county_ratio_failed')}: {e}")
-    ratio_county_df = pd.DataFrame()
+ratio_df, ratio_county_df = load_hourly_risk_data()
 
 st.title(t("hours"))
 st.caption(t("hours_risk_analysis_desc"))

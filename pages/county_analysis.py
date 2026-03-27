@@ -6,12 +6,10 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from utils import apply_style, render_global_sidebar, load_data, load_raw_data, cached_analyze_county_stability, t
+from utils import apply_style, render_global_sidebar, load_raw_data, cached_analyze_county_stability, t
 
 apply_style()
 render_global_sidebar("pages/county_analysis.py")
-
-trend, county, hours = load_data()
 
 with st.spinner(t('loading_analysis')):
     hourly_df = load_raw_data()

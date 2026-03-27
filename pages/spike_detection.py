@@ -75,6 +75,9 @@ if selected_county != "__all__":
 else:
     working_df = hourly_df.copy()
 
+working_df["datacreationdate"] = pd.to_datetime(working_df["datacreationdate"], errors="coerce")
+working_df = working_df.dropna(subset=["datacreationdate"]).sort_values("datacreationdate")
+
 with st.spinner(t("spike_calculating")):
     val_arg = threshold_val if method == "rolling_threshold" else 1.5
     z_arg = threshold_val if method == "zscore" else 2.5
@@ -164,9 +167,17 @@ with chart_container:
 
     chart_site = selected_county if selected_county != "__all__" else top_site
     plot_df = working_df[working_df["sitename"] == top_site] if selected_county == "__all__" else working_df                                                            
+    plot_df = plot_df.sort_values("datacreationdate")
+
+    latest_update_time = plot_df["datacreationdate"].max()
+    earliest_time = plot_df["datacreationdate"].min()
     
     base_line = alt.Chart(plot_df).mark_line(opacity=0.4, color='#6B7280').encode(  
-        x=alt.X("datacreationdate:T", title=t("date_label")),
+        x=alt.X(
+            "datacreationdate:T",
+            title=t("date_label"),
+            scale=alt.Scale(domain=[earliest_time, latest_update_time]),
+        ),
         y=alt.Y(f"{pollutant}:Q", title=pollutant_display),
         detail="sitename:N",
         tooltip=["sitename", "datacreationdate", pollutant]

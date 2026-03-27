@@ -450,13 +450,30 @@ def cached_analyze_county_stability(hourly_df: pd.DataFrame) -> pd.DataFrame:
     from src.analyze_data import analyze_county_stability
     return analyze_county_stability(hourly_df).copy()
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=600)
 def load_data():
-    time_structure_path = BASE_DIR / "output/tables/daily_time_structure.csv"
-    fallback_path = BASE_DIR / "output/tables/daily_trend.csv"
-    trend_path = time_structure_path if time_structure_path.exists() else fallback_path
+    """Compute trend/county/hour summary from latest hourly source data."""
+    hourly_df = load_raw_data()
+    if hourly_df.empty:
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
-    trend = pd.read_csv(trend_path)
-    county = pd.read_csv(BASE_DIR / "output/tables/county_avg.csv")
-    hours = pd.read_csv(BASE_DIR / "output/tables/high_pollution_hours.csv")
-    return trend, county, hours
+    from src.analyze_data import daily_avg_aqi, avg_aqi_by_county, high_pollution_hours
+
+    trend = daily_avg_aqi(hourly_df)
+    county = avg_aqi_by_county(hourly_df)
+    hours = high_pollution_hours(hourly_df)
+    return trend.copy(), county.copy(), hours.copy()
+
+
+@st.cache_data(ttl=600)
+def load_hourly_risk_data() -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Compute hourly risk ratio tables from latest hourly source data."""
+    hourly_df = load_raw_data()
+    if hourly_df.empty:
+        return pd.DataFrame(), pd.DataFrame()
+
+    from src.analyze_data import high_pollution_hour_ratio, high_pollution_hour_ratio_by_county
+
+    ratio_df = high_pollution_hour_ratio(hourly_df)
+    ratio_county_df = high_pollution_hour_ratio_by_county(hourly_df)
+    return ratio_df.copy(), ratio_county_df.copy()
