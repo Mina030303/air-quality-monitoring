@@ -178,19 +178,26 @@ with tab_spike:
         )
         st.altair_chart(spike_chart, use_container_width=True)
 
+        latest_time = spikes_work["datacreationdate"].max().floor("h")
+        start_time = latest_time - pd.Timedelta(hours=23)
+
+        hourly_bins = pd.date_range(start=start_time, end=latest_time, freq="h")
+
         time_spike = (
             spikes_work.assign(time_bin=spikes_work["datacreationdate"].dt.floor("h"))
             .groupby("time_bin")
             .size()
-            .reset_index(name="spike_count")
-            .sort_values("time_bin")
+            .reindex(hourly_bins, fill_value=0)
+            .rename("spike_count")
+            .reset_index()
+            .rename(columns={"index": "time_bin"})
         )
 
         spike_hour_chart = (
             alt.Chart(time_spike)
             .mark_line(strokeWidth=2.8, color="#1F5D99", point=alt.OverlayMarkDef(filled=True, size=42))
             .encode(
-                x=alt.X("time_bin:T", title=t("date_label")),
+                x=alt.X("time_bin:T", title=t("hours_x_axis_label"), axis=alt.Axis(format="%H:%M")),
                 y=alt.Y("spike_count:Q", title=t("hours_spike_count_legend")),
                 tooltip=[
                     alt.Tooltip("time_bin:T", title=t("date_label"), format="%Y-%m-%d %H:%M"),
