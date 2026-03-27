@@ -395,31 +395,45 @@ def apply_style():
 
 @st.cache_data(ttl=3600)
 def load_raw_data() -> pd.DataFrame:
-    """讀取每小時 AQI 原始資料並作 1 小時快取。"""
-    primary_path = BASE_DIR / "data/hourly_aqi.csv"
-    fallback_path = BASE_DIR / "data/processed/hourly_clean.csv"
-    data_path = primary_path if primary_path.exists() else fallback_path
+    """讀取每小時 AQI：以 processed 歷史為主，合併最新 crawler，並保留近 30 天。"""
 
-    if data_path.exists():
-        df = pd.read_csv(data_path)
-
+    def _normalize_hourly_df(df: pd.DataFrame) -> pd.DataFrame:
         rename_map = {}
         if "AQI" in df.columns and "aqi" not in df.columns:
             rename_map["AQI"] = "aqi"
         if "County" in df.columns and "county" not in df.columns:
             rename_map["County"] = "county"
+        if "datacreationdate" not in df.columns and "publishtime" in df.columns:
+            rename_map["publishtime"] = "datacreationdate"
         if rename_map:
             df = df.rename(columns=rename_map)
 
-        # crawler 使用 AQX_P_432 時間欄位常見為 publishtime，統一轉為分析流程使用的 datacreationdate
-        if "datacreationdate" not in df.columns and "publishtime" in df.columns:
-            df = df.rename(columns={"publishtime": "datacreationdate"})
-
         if "datacreationdate" in df.columns:
             df["datacreationdate"] = pd.to_datetime(df["datacreationdate"], errors="coerce")
+        return df
 
-        return df.copy()
-    return pd.DataFrame()
+    processed_path = BASE_DIR / "data/processed/hourly_clean.csv"
+    realtime_path = BASE_DIR / "data/hourly_aqi.csv"
+
+    frames = []
+    if processed_path.exists():
+        frames.append(_normalize_hourly_df(pd.read_csv(processed_path)))
+    if realtime_path.exists():
+        frames.append(_normalize_hourly_df(pd.read_csv(realtime_path)))
+
+    if not frames:
+        return pd.DataFrame()
+
+    df = pd.concat(frames, ignore_index=True).drop_duplicates()
+
+    if "datacreationdate" in df.columns:
+        df = df.dropna(subset=["datacreationdate"])
+        if not df.empty:
+            latest_time = df["datacreationdate"].max()
+            cutoff = latest_time - pd.Timedelta(days=30)
+            df = df[df["datacreationdate"] >= cutoff]
+
+    return df.copy()
 
 @st.cache_data(ttl=3600)
 def cached_calculate_county_risk_score(hourly_df: pd.DataFrame) -> pd.DataFrame:

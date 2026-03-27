@@ -6,6 +6,8 @@ from utils import apply_style, render_global_sidebar, t
 
 BASE_DIR = Path(__file__).resolve().parent
 HOURLY_AQI_PATH = BASE_DIR / "data" / "hourly_aqi.csv"
+DAILY_AQI_PATH = BASE_DIR / "data" / "daily_aqi.csv"
+PROCESSED_DAILY_PATH = BASE_DIR / "data" / "processed" / "daily_clean.csv"
 
 
 @st.cache_data(ttl=600)
@@ -28,19 +30,57 @@ def load_home_hourly_aqi() -> tuple[pd.DataFrame, str | None, bool]:
 
     return df, last_sync, True
 
+
+@st.cache_data(ttl=600)
+def load_daily_aqi() -> tuple[pd.DataFrame, str | None, bool]:
+    """Load daily AQI with 10-minute cache, keep a 2-year window."""
+    frames = []
+    if PROCESSED_DAILY_PATH.exists():
+        frames.append(pd.read_csv(PROCESSED_DAILY_PATH))
+    if DAILY_AQI_PATH.exists():
+        frames.append(pd.read_csv(DAILY_AQI_PATH))
+
+    if not frames:
+        return pd.DataFrame(), None, False
+
+    df = pd.concat(frames, ignore_index=True).drop_duplicates()
+    last_sync: str | None = None
+
+    if "monitordate" in df.columns:
+        monitor_ts = pd.to_datetime(df["monitordate"], errors="coerce").dropna()
+        if not monitor_ts.empty:
+            cutoff = monitor_ts.max() - pd.Timedelta(days=365 * 2)
+            if "monitordate" in df.columns:
+                parsed = pd.to_datetime(df["monitordate"], errors="coerce")
+                df = df[parsed >= cutoff]
+            last_sync = monitor_ts.max().strftime("%Y-%m-%d")
+
+    if last_sync is None and "publishtime" in df.columns:
+        publish_ts = pd.to_datetime(df["publishtime"], errors="coerce").dropna()
+        if not publish_ts.empty:
+            last_sync = publish_ts.max().strftime("%Y-%m-%d %H:%M:%S")
+
+    if last_sync is None:
+        file_mtime = pd.to_datetime(DAILY_AQI_PATH.stat().st_mtime, unit="s")
+        last_sync = file_mtime.strftime("%Y-%m-%d %H:%M:%S")
+
+    return df, last_sync, True
+
 apply_style()
 render_global_sidebar("app.py")
 
-if st.sidebar.button("手動更新數據", use_container_width=True):
-    st.cache_data.clear()
-    st.rerun()
-
 _, last_sync_time, has_hourly_data = load_home_hourly_aqi()
+_, daily_sync_time, has_daily_data = load_daily_aqi()
 
 if has_hourly_data and last_sync_time:
     st.caption(f"📅 數據最後同步時間：{last_sync_time}")
 else:
     st.info("目前尚未找到 data/hourly_aqi.csv，請先執行 crawler 或等待 GitHub Actions 同步。")
+
+if has_daily_data and daily_sync_time:
+    st.caption(f"📅 Daily 數據最後同步日期：{daily_sync_time}")
+else:
+    st.info("目前尚未找到 data/daily_aqi.csv。")
 
 st.title(t("home_title"))
 st.caption(t("home_desc"))

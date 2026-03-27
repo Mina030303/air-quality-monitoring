@@ -46,8 +46,12 @@ jobs:
             echo "ERROR: data/hourly_aqi.csv was not generated!"
             exit 1
           fi
+          if [ ! -f data/daily_aqi.csv ]; then
+            echo "ERROR: data/daily_aqi.csv was not generated!"
+            exit 1
+          fi
 
-          git add data/hourly_aqi.csv
+          git add data/*.csv
           
           # 檢查是否有變動，有的話才提交
           if [ -n "$(git status --porcelain)" ]; then
