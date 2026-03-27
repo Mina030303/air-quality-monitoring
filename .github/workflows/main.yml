@@ -1,23 +1,24 @@
-name: HourlyData Update
+name: Data Update
 
 on:
   schedule:
-    # 修改這裡：每小時的第21分鐘執行一次
+    # Hourly update
     - cron: '21 * * * *'
+    # Daily update (00:25 Asia/Taipei = 16:25 UTC)
+    - cron: '25 16 * * *'
   workflow_dispatch: 
 
 jobs:
-  update_data:
+  hourly_job:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '21 * * * *'
     runs-on: ubuntu-latest
     permissions:
-      contents: write # 確保有權限推送到 data 資料夾
-      
+      contents: write
+
     steps:
-      # 升級到 v4 以上以支援 Node.js 24
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 升級到 v5 以上以支援 Node.js 24
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -33,32 +34,69 @@ jobs:
           API_KEY: ${{ secrets.API_KEY }}
         run: python crawler.py
 
-      - name: Commit and Push if data changed
-        # 明確傳遞內建的 GITHUB_TOKEN
+      - name: Commit hourly data if changed
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # 這是 GitHub 內建的，不用手動設 Secret
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          
-          # 檢查檔案是否存在
+
           if [ ! -f data/hourly_aqi.csv ]; then
             echo "ERROR: data/hourly_aqi.csv was not generated!"
             exit 1
           fi
+
+          git add data/hourly_aqi.csv
+
+          if git diff --staged --quiet; then
+            echo "No hourly data changes, skip commit."
+          else
+            git commit -m "Automated hourly data update $(date) [skip ci]"
+            git push origin main
+          fi
+
+  daily_job:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '25 16 * * *'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas requests
+
+      - name: Run Crawler
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+        run: python crawler.py
+
+      - name: Commit daily data if changed
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
           if [ ! -f data/daily_aqi.csv ]; then
             echo "ERROR: data/daily_aqi.csv was not generated!"
             exit 1
           fi
 
-          git add data/*.csv
-          
-          # 檢查是否有變動，有的話才提交
-          if [ -n "$(git status --porcelain)" ]; then
-            # 在 Commit 訊息加上 [skip ci] 防止無窮迴圈
-            git commit -m "Automated hourly data update $(date) [skip ci]"
-            # 強制推送到 main 分支
-            git push origin main
+          git add data/daily_aqi.csv
+
+          if git diff --staged --quiet; then
+            echo "No daily data changes, skip commit."
           else
-            echo "No changes in data, skip commit."
+            git commit -m "Automated daily data update $(date) [skip ci]"
+            git push origin main
           fi

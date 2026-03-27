@@ -70,17 +70,11 @@ apply_style()
 render_global_sidebar("app.py")
 
 _, last_sync_time, has_hourly_data = load_home_hourly_aqi()
-_, daily_sync_time, has_daily_data = load_daily_aqi()
 
 if has_hourly_data and last_sync_time:
-    st.caption(f"📅 數據最後同步時間：{last_sync_time}")
+    st.caption(f"數據最後同步時間：{last_sync_time}")
 else:
     st.info("目前尚未找到 data/hourly_aqi.csv，請先執行 crawler 或等待 GitHub Actions 同步。")
-
-if has_daily_data and daily_sync_time:
-    st.caption(f"📅 Daily 數據最後同步日期：{daily_sync_time}")
-else:
-    st.info("目前尚未找到 data/daily_aqi.csv。")
 
 st.title(t("home_title"))
 st.caption(t("home_desc"))
