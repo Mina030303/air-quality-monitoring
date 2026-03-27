@@ -4,8 +4,43 @@ import altair as alt
 from pathlib import Path
 from utils import apply_style, render_global_sidebar, t
 
+BASE_DIR = Path(__file__).resolve().parent
+HOURLY_AQI_PATH = BASE_DIR / "data" / "hourly_aqi.csv"
+
+
+@st.cache_data(ttl=600)
+def load_home_hourly_aqi() -> tuple[pd.DataFrame, str | None, bool]:
+    """Load latest hourly AQI CSV with 10-minute cache for Streamlit Home."""
+    if not HOURLY_AQI_PATH.exists():
+        return pd.DataFrame(), None, False
+
+    df = pd.read_csv(HOURLY_AQI_PATH)
+    last_sync: str | None = None
+
+    if "publishtime" in df.columns:
+        publish_ts = pd.to_datetime(df["publishtime"], errors="coerce").dropna()
+        if not publish_ts.empty:
+            last_sync = publish_ts.max().strftime("%Y-%m-%d %H:%M:%S")
+
+    if last_sync is None:
+        file_mtime = pd.to_datetime(HOURLY_AQI_PATH.stat().st_mtime, unit="s")
+        last_sync = file_mtime.strftime("%Y-%m-%d %H:%M:%S")
+
+    return df, last_sync, True
+
 apply_style()
 render_global_sidebar("app.py")
+
+if st.sidebar.button("手動更新數據", use_container_width=True):
+    st.cache_data.clear()
+    st.rerun()
+
+_, last_sync_time, has_hourly_data = load_home_hourly_aqi()
+
+if has_hourly_data and last_sync_time:
+    st.caption(f"📅 數據最後同步時間：{last_sync_time}")
+else:
+    st.info("目前尚未找到 data/hourly_aqi.csv，請先執行 crawler 或等待 GitHub Actions 同步。")
 
 st.title(t("home_title"))
 st.caption(t("home_desc"))
