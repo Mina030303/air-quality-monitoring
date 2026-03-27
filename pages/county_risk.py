@@ -178,29 +178,22 @@ with tab_spike:
         )
         st.altair_chart(spike_chart, use_container_width=True)
 
-        latest_time = spikes_work["datacreationdate"].max().floor("h")
-        start_time = latest_time - pd.Timedelta(hours=23)
-
-        hourly_bins = pd.date_range(start=start_time, end=latest_time, freq="h")
-
-        time_spike = (
-            spikes_work.assign(time_bin=spikes_work["datacreationdate"].dt.floor("h"))
-            .groupby("time_bin")
+        hourly_spike = (
+            spikes_work.groupby("hour")
             .size()
-            .reindex(hourly_bins, fill_value=0)
-            .rename("spike_count")
-            .reset_index()
-            .rename(columns={"index": "time_bin"})
+            .reset_index(name="spike_count")
+            .sort_values("hour")
         )
+        hourly_spike["hour_label"] = hourly_spike["hour"].astype(int).astype(str) + ":00"
 
         spike_hour_chart = (
-            alt.Chart(time_spike)
+            alt.Chart(hourly_spike)
             .mark_line(strokeWidth=2.8, color="#1F5D99", point=alt.OverlayMarkDef(filled=True, size=42))
             .encode(
-                x=alt.X("time_bin:T", title=t("hours_x_axis_label"), axis=alt.Axis(format="%H:%M")),
+                x=alt.X("hour_label:N", title=t("hours_x_axis_label"), sort=[f"{h}:00" for h in range(24)]),
                 y=alt.Y("spike_count:Q", title=t("hours_spike_count_legend")),
                 tooltip=[
-                    alt.Tooltip("time_bin:T", title=t("date_label"), format="%Y-%m-%d %H:%M"),
+                    alt.Tooltip("hour_label:N", title=t("hours_tooltip_hour")),
                     alt.Tooltip("spike_count:Q", title=t("hours_spike_count_legend")),
                 ],
             )
