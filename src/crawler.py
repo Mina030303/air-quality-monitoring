@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import requests
+import certifi
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 # MOENV open data endpoints
@@ -38,8 +39,7 @@ def _fetch_records(
         params["api_key"] = api_key
 
     try:
-        # Disable SSL verification for Windows environments (TODO: use certifi in production)
-        response = requests.get(api_url, params=params, timeout=timeout, verify=False)
+        response = requests.get(api_url, params=params, timeout=timeout, verify=certifi.where())
         response.raise_for_status()
         payload = response.json()
     except requests.RequestException as exc:

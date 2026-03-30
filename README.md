@@ -28,6 +28,11 @@ A production-style data application for Taiwan AQI monitoring, combining automat
 - Scheduled data refresh in CI/CD
     - GitHub Actions cron jobs update hourly/daily data files and commit only when data changes.
 
+## MOENV Dataset Mapping
+
+- Hourly history dataset: AQX_P_488
+- Daily history dataset: AQX_P_434
+
 ## Project Structure
 
 - App entry

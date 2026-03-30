@@ -6,7 +6,7 @@ Handles AQI record validation, API response parsing, and coordinate validation.
 from datetime import datetime
 from typing import Optional, Any, Dict
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import AliasChoices, BaseModel, Field, field_validator, model_validator
 
 
 class AQIRecord(BaseModel):
@@ -20,11 +20,15 @@ class AQIRecord(BaseModel):
     site_name: str = Field(
         ...,
         min_length=1,
+        validation_alias=AliasChoices(
+            "site_name", "SiteName", "siteName", "sitename", "Sitename", "測站名稱", "station_name", "StationName"
+        ),
         description="Monitoring station name (must be non-empty)"
     )
     
     county: str = Field(
         default="",
+        validation_alias=AliasChoices("county", "County", "縣市", "County_Name"),
         description="County or administrative region"
     )
     
@@ -32,6 +36,7 @@ class AQIRecord(BaseModel):
         default=None,
         ge=0,
         le=500,
+        validation_alias=AliasChoices("aqi", "AQI", "空氣品質指標", "AirQualityIndex"),
         description="Air Quality Index (0-500, or None if invalid)"
     )
     
@@ -42,6 +47,9 @@ class AQIRecord(BaseModel):
     
     publish_time: datetime = Field(
         ...,
+        validation_alias=AliasChoices(
+            "publish_time", "PublishTime", "publishTime", "publishtime", "datacreationdate", "DataCreationDate", "發布時間", "PublishingDate", "RecordTime"
+        ),
         description="Record publication timestamp"
     )
     
@@ -240,11 +248,12 @@ class AQIRecord(BaseModel):
             ... }
             >>> record = AQIRecord.from_api_json(data)
         """
-        # Field name mappings for common API formats
+        # Accept common MOENV field variants, including historical AQX_P_488
+        # keys such as datacreationdate, using case-insensitive matching.
         mapping = {
             "site_name": [
-                "site_name", "SiteName", "siteName",
-                "sitename", "測站名稱", "station_name", "StationName"
+                "site_name", "SiteName", "siteName", "sitename", "Sitename",
+                "測站名稱", "station_name", "StationName"
             ],
             "county": [
                 "county", "County", "縣市", "County_Name"
@@ -256,8 +265,9 @@ class AQIRecord(BaseModel):
                 "status", "Status", "狀態", "AirQualityStatus"
             ],
             "publish_time": [
-                "publish_time", "PublishTime", "publishTime",
-                "publishtime", "發布時間", "PublishingDate", "RecordTime"
+                "publish_time", "PublishTime", "publishTime", "publishtime",
+                "PublishTime", "datacreationdate", "DataCreationDate",
+                "發布時間", "PublishingDate", "RecordTime"
             ],
             "longitude": [
                 "longitude", "Longitude", "經度", "lon", "Lon"
@@ -266,17 +276,25 @@ class AQIRecord(BaseModel):
                 "latitude", "Latitude", "緯度", "lat", "Lat"
             ],
         }
-        
-        # Extract values from API response
-        extracted = {}
-        
+
+        # Build case-insensitive key lookup while preserving original values.
+        lower_key_lookup = {str(k).lower(): v for k, v in json_data.items()}
+
+        def pick_value(candidates: list[str]) -> Any:
+            for candidate in candidates:
+                if candidate in json_data:
+                    return json_data[candidate]
+                lowered = candidate.lower()
+                if lowered in lower_key_lookup:
+                    return lower_key_lookup[lowered]
+            return None
+
+        extracted: dict[str, Any] = {}
         for model_field, api_field_variants in mapping.items():
-            for api_field in api_field_variants:
-                if api_field in json_data:
-                    extracted[model_field] = json_data[api_field]
-                    break
-        
-        # Create and return AQIRecord instance
+            value = pick_value(api_field_variants)
+            if value is not None:
+                extracted[model_field] = value
+
         return cls(**extracted)
     
     def to_db_tuple(self) -> tuple:

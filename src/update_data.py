@@ -4,9 +4,9 @@ from pathlib import Path
 from datetime import datetime, timedelta
 import pandas as pd
 
-from src.fetch_data import _fetch_paginated_csv_data
-from src.clean_data import clean_hourly_data, clean_daily_data
-from src.save_data import save_csv
+from fetch_data import _fetch_paginated_csv_data
+from clean_data import clean_hourly_data, clean_daily_data
+from save_data import save_csv
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
