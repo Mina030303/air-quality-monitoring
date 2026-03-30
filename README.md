@@ -1,86 +1,58 @@
-# Taiwan Air Quality Dashboard
+# Taiwan Air Quality Monitoring Platform
 
-## Overview
-This project helps you monitor air quality in Taiwan.
-It has two parts:
-- A data pipeline to fetch, clean, and summarize data
-- A Streamlit dashboard to view charts and insights
+A lightweight Streamlit dashboard for Taiwan air quality analytics.
 
-The dashboard supports Traditional Chinese and English.
+## What It Does
+- Fetches AQI data from Taiwan MOENV API
+- Tracks hourly and daily patterns
+- Shows trend, county-level risk, high-pollution hours, and spike detection
+- Supports Traditional Chinese and English UI
 
-## Main Features
-- Daily and hourly air quality analysis (AQI, PM2.5, PM10, O3)
-- Trend charts with 7-day moving average
-- County risk ranking
-- High pollution hour analysis
-- Spike detection for unusual pollution events
-
-## Tech Stack
-- Python
-- Pandas
-- Streamlit
-- Altair
-- python-dotenv
-
-## Project Structure
-```text
-air_quality_monitoring_platform/
-├── app.py
-├── main.py
-├── bootstrap_data.py
-├── config.py
-├── utils.py
-├── requirements.txt
-├── pages/
-│   ├── trend.py
-│   ├── county_analysis.py
-│   ├── county_risk.py
-│   ├── high_pollution_hours.py
-│   └── spike_detection.py
-├── src/
-│   ├── fetch_data.py
-│   ├── clean_data.py
-│   ├── analyze_data.py
-│   ├── save_data.py
-│   └── update_data.py
-├── data/
-│   ├── raw/
-│   └── processed/
-└── output/
-    ├── figures/
-    └── tables/
-```
+## Data Sources and Files
+- Realtime crawler outputs:
+    - `data/hourly_aqi.csv`
+    - `data/daily_aqi.csv`
+- Historical baseline files:
+    - `data/processed/hourly_clean.csv` (about 30 days)
+    - `data/processed/daily_clean.csv` (about 2 years)
 
 ## Quick Start
-
-1. Clone the repo
+1. Clone and enter the project:
 ```bash
 git clone https://github.com/Mina030303/air-quality-monitoring.git
 cd air_quality_monitoring_platform
 ```
 
-2. Install packages
+2. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Create `.env`
+3. Add your API key:
 ```env
-API_KEY=your_moenv_api_key_here
+API_KEY=your_moenv_api_key
 ```
 
-4. (Optional) Run data pipeline
+4. (Optional) Run local pipeline refresh:
 ```bash
 python main.py
 ```
 
-5. Run dashboard
+5. Start Streamlit:
 ```bash
 streamlit run app.py
 ```
 
-## Notes
-- If you do not run `main.py`, the app can still use existing CSV files in `data/processed/` and `output/tables/`.
-- For Streamlit Cloud, keep `data/processed/` and `output/tables/` in the repo so charts can load.
+## Automation
+GitHub Actions in `.github/workflows/main.yml` updates data on schedule:
+- Hourly job updates `data/hourly_aqi.csv`
+- Daily job updates `data/daily_aqi.csv`
+
+## Main Pages
+- `pages/trend.py`: Taiwan AQI trend
+- `pages/county_analysis.py`: County pollution profile
+- `pages/county_risk.py`: County risk scoring and spike summary
+- `pages/high_pollution_hours.py`: High-pollution hour analysis
+- `pages/spike_detection.py`: Spike event detection
 
 

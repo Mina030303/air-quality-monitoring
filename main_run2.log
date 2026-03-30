@@ -1,0 +1,69 @@
+2026-03-30 13:38:40,358 - __main__ - INFO - ======================================================================
+2026-03-30 13:38:40,358 - __main__ - INFO - Taiwan Air Quality Monitoring Platform - Data Pipeline Started
+2026-03-30 13:38:40,358 - __main__ - INFO - Timestamp: 2026-03-30T13:38:40.358464
+2026-03-30 13:38:40,358 - __main__ - INFO - ======================================================================
+2026-03-30 13:38:40,358 - __main__ - INFO - 
+[STEP 1a] Fetching and validating hourly AQI data...
+2026-03-30 13:38:40,358 - __main__ - INFO - Fetching AQI data from MOENV API...
+C:\Users\mina\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\connectionpool.py:1097: InsecureRequestWarning: Unverified HTTPS request is being made to host 'data.moenv.gov.tw'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(
+2026-03-30 13:38:40,535 - __main__ - INFO - Fetched 84 records from API
+2026-03-30 13:38:40,537 - __main__ - WARNING - Validation error on record 70: 1 issue(s)
+2026-03-30 13:38:40,537 - __main__ - INFO - Validation complete: 83 valid, 1 invalid
+2026-03-30 13:38:40,537 - __main__ - INFO - \u2713 Obtained 83 valid hourly records
+2026-03-30 13:38:40,537 - __main__ - INFO - \u26a0 Skipped 1 invalid hourly records
+2026-03-30 13:38:40,537 - __main__ - INFO - 
+[STEP 1b] Fetching and validating daily AQI data...
+2026-03-30 13:38:40,537 - __main__ - INFO - Fetching daily AQI data from MOENV API...
+C:\Users\mina\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\connectionpool.py:1097: InsecureRequestWarning: Unverified HTTPS request is being made to host 'data.moenv.gov.tw'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(
+2026-03-30 13:38:40,866 - __main__ - INFO - Fetched 1000 daily records from API
+2026-03-30 13:38:40,875 - __main__ - INFO - Daily validation complete: 1000 valid, 0 invalid
+2026-03-30 13:38:40,875 - __main__ - INFO - \u2713 Obtained 1000 valid daily records
+2026-03-30 13:38:40,875 - __main__ - INFO - 
+[STEP 2a] Saving hourly hot data (CSV for Streamlit)...
+2026-03-30 13:38:40,880 - __main__ - INFO - Saved 83 records to hot data: C:\de_prep\projects\air_quality_monitoring_platform\data\hourly_aqi.csv
+2026-03-30 13:38:40,880 - __main__ - INFO - \u2713 Hourly hot data saved successfully
+2026-03-30 13:38:40,880 - __main__ - INFO - 
+[STEP 2b] Saving daily hot data (CSV for Streamlit)...
+2026-03-30 13:38:40,892 - __main__ - INFO - Saved 1000 daily records to hot data: C:\de_prep\projects\air_quality_monitoring_platform\data\daily_aqi.csv
+2026-03-30 13:38:40,893 - __main__ - INFO - \u2713 Daily hot data saved successfully
+2026-03-30 13:38:40,893 - __main__ - INFO - 
+[STEP 3a] Syncing hourly cold data (PostgreSQL database)...
+2026-03-30 13:38:40,893 - __main__ - INFO - Initializing database schema...
+2026-03-30 13:38:42,317 - src.database - INFO - Connection pool created successfully
+2026-03-30 13:38:42,616 - src.database - INFO - Database schema initialized successfully
+2026-03-30 13:38:42,616 - __main__ - INFO - Upserting 83 records to Neon PostgreSQL...
+2026-03-30 13:38:42,929 - src.database - INFO - Successfully upserted 83 records
+2026-03-30 13:38:42,929 - __main__ - INFO - Successfully synced 83 records to database
+2026-03-30 13:38:42,930 - src.database - INFO - Connection pool closed successfully
+2026-03-30 13:38:42,930 - __main__ - INFO - \u2713 Hourly cold data synced successfully
+2026-03-30 13:38:42,930 - __main__ - INFO - 
+[STEP 3b] Syncing daily cold data (PostgreSQL database)...
+2026-03-30 13:38:42,930 - __main__ - INFO - Initializing daily database schema...
+2026-03-30 13:38:43,490 - src.database - INFO - Connection pool created successfully
+2026-03-30 13:38:43,885 - src.database - INFO - Daily database schema initialized successfully
+2026-03-30 13:38:43,885 - __main__ - INFO - Upserting 1000 daily records to Neon PostgreSQL...
+2026-03-30 13:38:45,046 - src.database - INFO - Successfully upserted 100 daily records
+2026-03-30 13:38:45,046 - __main__ - INFO - Successfully synced 100 daily records to database
+2026-03-30 13:38:45,046 - src.database - INFO - Connection pool closed successfully
+2026-03-30 13:38:45,046 - __main__ - INFO - \u2713 Daily cold data synced successfully
+2026-03-30 13:38:45,046 - __main__ - INFO - 
+[STEP 4] Loading combined data and running analysis pipeline...
+C:\Users\mina\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\connectionpool.py:1097: InsecureRequestWarning: Unverified HTTPS request is being made to host 'data.moenv.gov.tw'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(
+C:\Users\mina\AppData\Local\Programs\Python\Python313\Lib\site-packages\urllib3\connectionpool.py:1097: InsecureRequestWarning: Unverified HTTPS request is being made to host 'data.moenv.gov.tw'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+  warnings.warn(
+2026-03-30 13:38:46,494 - __main__ - INFO - Loaded hourly data: (56448, 25)
+2026-03-30 13:38:46,494 - __main__ - INFO - Loaded daily data: (56637, 11)
+2026-03-30 13:38:46,494 - __main__ - INFO - Starting analysis pipeline...
+2026-03-30 13:38:46,654 - __main__ - INFO - Calculating county risk scores...
+2026-03-30 13:38:46,676 - __main__ - INFO - Running spike detection...
+2026-03-30 13:38:46,768 - __main__ - INFO - Analysis pipeline completed successfully
+2026-03-30 13:38:46,768 - __main__ - INFO - \u2713 Analysis pipeline completed
+2026-03-30 13:38:46,768 - __main__ - INFO - 
+======================================================================
+2026-03-30 13:38:46,768 - __main__ - INFO - Pipeline completed successfully
+2026-03-30 13:38:46,768 - __main__ - INFO - ======================================================================
+[OK] Saved 250 unique rows to C:\de_prep\projects\air_quality_monitoring_platform\data\hourly_aqi.csv
+[OK] Saved 1000 unique rows to C:\de_prep\projects\air_quality_monitoring_platform\data\daily_aqi.csv

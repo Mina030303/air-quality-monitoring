@@ -68,6 +68,7 @@ def _fetch_paginated_csv_data(
                 f"{BASE_URL}/{dataset_code}",
                 params=params,
                 timeout=30,
+                verify=False,  # Disable SSL verification for Windows environments
             )
             response.raise_for_status()
 
