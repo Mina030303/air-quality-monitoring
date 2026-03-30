@@ -1,0 +1,67 @@
+name: Hourly AQI Inference
+
+on:
+  schedule:
+    - cron: '15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  predict_and_publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run hourly inference
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python src/predict.py
+
+      - name: Commit and push forecast if changed
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+          if [ ! -f data/forecast.csv ]; then
+            echo "ERROR: data/forecast.csv was not generated"
+            exit 1
+          fi
+
+          git add data/forecast.csv
+
+          if git diff --staged --quiet; then
+            echo "No forecast changes, skip commit."
+          else
+            git commit -m "Automated hourly AQI forecast update [skip ci]"
+
+            for attempt in 1 2 3; do
+              git pull --rebase --autostash origin main
+              if git push origin HEAD:main; then
+                echo "Push succeeded on attempt ${attempt}."
+                break
+              fi
+
+              if [ "${attempt}" -eq 3 ]; then
+                echo "ERROR: push failed after 3 attempts."
+                exit 1
+              fi
+
+              echo "Push failed on attempt ${attempt}, retrying in 5s..."
+              sleep 5
+            done
+          fi
