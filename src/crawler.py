@@ -88,15 +88,20 @@ def upsert_hourly_to_db(records: list[dict[str, Any]], db_url: str) -> None:
     with engine.begin() as conn:
         for row in filtered:
             row = {k: v for k, v in row.items() if k in valid_cols}
-            if not row.get("publish_time") or not row.get("county") or not row.get("aqi"):
+            if not row.get("publish_time") or not row.get("county") or not row.get("aqi") or not row.get("sitename"):
                 continue
             sql = text("""
-                INSERT INTO hourly_aqi (county, publish_time, aqi)
-                VALUES (:county, :publish_time, :aqi)
+                INSERT INTO hourly_aqi (site_name, county, publish_time, aqi)
+                VALUES (:site_name, :county, :publish_time, :aqi)
                 ON CONFLICT (county, publish_time)
                 DO UPDATE SET aqi = EXCLUDED.aqi
             """)
-            conn.execute(sql, {"county": row["county"], "publish_time": row["publish_time"], "aqi": row["aqi"]})
+            conn.execute(sql, {
+                "site_name": row.get("sitename"),
+                "county": row["county"],
+                "publish_time": row["publish_time"],
+                "aqi": row["aqi"]
+            })
     print(f"[OK] Upserted {len(filtered)} new hourly AQI rows to DB (last 6 hours)")
 
 import csv
