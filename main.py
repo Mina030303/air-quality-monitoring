@@ -1,12 +1,13 @@
 from pathlib import Path
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from dotenv import load_dotenv
 from pydantic import ValidationError
 
-from src.crawler import fetch_hourly_aqi, fetch_daily_aqi, save_to_csv
+from src.crawler import fetch_daily_aqi, save_to_csv
+from src.fetch_data import fetch_hourly_history_range
 from src.models import AQIRecord, AQIRecordList, DailyAQIRecord, DailyAQIRecordList
 from src.database import (
     init_db, upsert_aqi, close_connection_pool,
@@ -53,10 +54,19 @@ def fetch_and_validate_data(api_key: str) -> tuple[list[AQIRecord], list[dict]]:
         - valid_records: List of AQIRecord objects
         - invalid_records: List of dicts with raw data and error info
     """
-    logger.info("Fetching AQI data from MOENV API...")
+    logger.info("Fetching AQI data from MOENV API (last 3 hours)...")
     
     try:
-        raw_data = fetch_hourly_aqi(api_key)
+        end_dt = datetime.now().replace(minute=0, second=0, microsecond=0)
+        start_dt = end_dt - timedelta(hours=3)
+
+        raw_df = fetch_hourly_history_range(
+            api_key=api_key,
+            start_dt=start_dt,
+            end_dt=end_dt,
+            max_pages=20,
+        )
+        raw_data = raw_df.to_dict(orient="records") if not raw_df.empty else []
         logger.info(f"Fetched {len(raw_data)} records from API")
     except Exception as e:
         error_msg = f"🚨 **[AQI Pipeline Error]** Failed to fetch hourly API data: {str(e)}"

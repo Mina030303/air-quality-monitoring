@@ -43,6 +43,8 @@ def load_data():
     if not FORECAST_PATH.exists(): return pd.DataFrame()
     df = pd.read_csv(FORECAST_PATH)
     df["forecast_time"] = pd.to_datetime(df["forecast_time"])
+    current_hour = pd.Timestamp.now().floor("h")
+    df = df[df["forecast_time"] >= current_hour].copy()
     return df
 
 def main():
@@ -98,8 +100,8 @@ def main():
     
     df = load_data()
     if df.empty:
-        st.error(t["error_no_data"])
-        return
+        st.error("Forecast data has expired")
+        st.stop()
 
     # --- 1. 頂部導覽篩選區 (按鈕化布局) ---
     counties = sorted(df["county"].unique().tolist())

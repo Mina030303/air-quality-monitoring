@@ -12,6 +12,8 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_absolute_error, r2_score
+from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 
@@ -120,12 +122,19 @@ def build_features(raw_df: pd.DataFrame) -> pd.DataFrame:
     return fallback_df
 
 
-def train_model(feature_df: pd.DataFrame) -> Pipeline:
+def train_model(feature_df: pd.DataFrame) -> tuple[Pipeline, float, float]:
     feature_cols = ["county", "hour", "day_of_week", "is_weekend", "aqi_lag_1", "aqi_lag_24"]
     target_col = "aqi"
 
     x = feature_df[feature_cols]
     y = feature_df[target_col]
+
+    x_train, x_test, y_train, y_test = train_test_split(
+        x,
+        y,
+        test_size=0.2,
+        random_state=42,
+    )
 
     preprocessor = ColumnTransformer(
         transformers=[
@@ -149,9 +158,14 @@ def train_model(feature_df: pd.DataFrame) -> Pipeline:
         ]
     )
 
-    pipeline.fit(x, y)
+    pipeline.fit(x_train, y_train)
+
+    y_pred = pipeline.predict(x_test)
+    mae = float(mean_absolute_error(y_test, y_pred))
+    r2 = float(r2_score(y_test, y_pred))
+
     logger.info("Model training complete on %s samples", len(feature_df))
-    return pipeline
+    return pipeline, mae, r2
 
 
 def extract_latest_context(feature_df: pd.DataFrame) -> dict[str, dict[str, float | pd.Timestamp]]:
@@ -253,7 +267,7 @@ def main() -> None:
     raw_df = load_last_30_days(database_url)
     feature_df = build_features(raw_df)
 
-    model = train_model(feature_df)
+    model, mae, r2 = train_model(feature_df)
     artifacts = TrainArtifacts(
         model=model,
         county_latest_context=extract_latest_context(feature_df),
@@ -263,6 +277,7 @@ def main() -> None:
     forecast_df = forecast_next_24_hours(model, feature_df)
     save_forecast(forecast_df)
 
+    logger.info("Model Evaluation -> MAE: %.2f, R2: %.2f", mae, r2)
     logger.info("Pipeline complete. Forecast rows: %s", len(forecast_df))
 
 

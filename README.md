@@ -1,76 +1,34 @@
 # Taiwan Air Quality Monitoring Platform
 
-A production-style data application for Taiwan AQI monitoring, combining automated data ingestion, validation, analytics, and an interactive Streamlit dashboard.
+An end-to-end AQI monitoring project for Taiwan: automated data ingestion, validation, analytics, and a multi-page Streamlit dashboard.
 
-## Key Features (and Special Technologies Used)
+## Highlights
 
-- Automated AQI ingestion from Taiwan MOENV open APIs
-    - Uses resilient HTTP fetching with retry and exponential backoff to reduce transient API/network failures.
+- Reliable API ingestion from Taiwan MOENV datasets (`AQX_P_488`, `AQX_P_434`)
+- Data validation with Pydantic v2 (schema checks, datetime parsing, coordinate validation)
+- Hot + cold storage design
+  - Hot: CSV for fast dashboard access
+  - Cold: Neon PostgreSQL with pooled connections and UPSERT deduplication
+- Analytics modules
+  - Daily and monthly trends
+  - County analysis and risk scoring
+  - High-pollution hour ratio
+  - Pollution spike detection
+- Interactive Streamlit dashboard with Traditional Chinese/English toggle
+- Scheduled ETL updates via GitHub Actions (commit only on data change)
 
-- Strong schema validation before storage and analysis
-    - Uses Pydantic v2 models to normalize field names, parse multiple datetime formats, validate coordinates, and filter invalid records.
+## Repository Layout
 
-- Hot + cold data architecture
-    - Hot layer: CSV files for fast dashboard rendering.
-    - Cold layer: Neon PostgreSQL with connection pooling and UPSERT logic for long-term, deduplicated storage.
-
-- Built-in analytical modules for decision support
-    - Trend analysis (daily/monthly)
-    - County-level profiling and risk scoring
-    - High-pollution hour ratio analysis
-    - Pollution spike detection by county/site/time
-
-- Interactive dashboard with multilingual UX
-    - Streamlit multi-page app with Traditional Chinese/English toggle.
-    - Altair visualizations for clear trend and comparison charts.
-    - Streamlit caching (`st.cache_data`) to improve load speed.
-
-- Scheduled data refresh in CI/CD
-    - GitHub Actions cron jobs update hourly/daily data files and commit only when data changes.
-
-## MOENV Dataset Mapping
-
-- Hourly history dataset: AQX_P_488
-- Daily history dataset: AQX_P_434
-
-## Project Structure
-
-- App entry
-    - `app.py`: Streamlit home page and navigation.
-
-- Data pipeline
-    - `main.py`: Pipeline orchestration (fetch, validate, save/sync, analysis output).
-    - `src/crawler.py`: API fetching, deduplication, CSV merge/write.
-    - `src/models.py`: Pydantic validation models.
-    - `src/database.py`: PostgreSQL connection pool and batch upsert.
-
-- Dashboard pages
-    - `pages/trend.py`: National trend exploration.
-    - `pages/county_analysis.py`: County comparison and profile analysis.
-    - `pages/county_risk.py`: County risk scoring and ranking.
-    - `pages/high_pollution_hours.py`: High-pollution hour behavior.
-    - `pages/spike_detection.py`: Spike event exploration.
-
-- Automation
-    - `.github/workflows/main.yml`: Scheduled hourly/daily update jobs.
-
-## Data Files
-
-- Realtime data (crawler output)
-    - `data/hourly_aqi.csv`
-    - `data/daily_aqi.csv`
-
-- Processed historical baseline
-    - `data/processed/hourly_clean.csv` (~30 days)
-    - `data/processed/daily_clean.csv` (~2 years)
-
-- Analysis outputs
-    - `output/tables/`: generated KPI and summary tables
-    - `output/figures/`: generated visual assets
+- `app.py`: Streamlit entry page
+- `main.py`: Data pipeline orchestration
+- `src/`: ingestion, validation, storage, prediction, analysis utilities
+- `pages/`: dashboard pages (trend, county analysis, risk, high-pollution hours, spikes)
+- `data/`: raw, processed, and latest AQI files
+- `output/`: generated tables and figures
 
 ## Quick Start
 
-1. Clone the repository:
+1. Clone and enter the project:
 
 ```bash
 git clone https://github.com/Mina030303/air-quality-monitoring.git
@@ -83,38 +41,38 @@ cd air_quality_monitoring_platform
 pip install -r requirements.txt
 ```
 
-3. Create a `.env` file:
+3. Add environment variables in `.env`:
 
 ```env
 API_KEY=your_moenv_api_key
-# Optional (for cold storage):
+# Optional:
 # DATABASE_URL=your_neon_postgresql_url
 ```
 
-4. Run data pipeline (optional but recommended before dashboard launch):
+4. Run pipeline (recommended before dashboard):
 
 ```bash
 python main.py
 ```
 
-5. Launch dashboard:
+5. Start dashboard:
 
 ```bash
 streamlit run app.py
 ```
 
-## Deployment and Automation Notes
+## Data Outputs
 
-- Scheduled refresh is configured in `.github/workflows/main.yml`.
-- The workflow commits data changes back to `main` only when files actually change.
-- You can also trigger workflow updates manually with `workflow_dispatch`.
+- Latest snapshots: `data/hourly_aqi.csv`, `data/daily_aqi.csv`
+- Clean baselines: `data/processed/hourly_clean.csv`, `data/processed/daily_clean.csv`
+- Analysis results: `output/tables/`, `output/figures/`
 
 ## Tech Stack
 
 - Python, Pandas, Requests
 - Streamlit, Altair, Matplotlib
 - Pydantic v2, python-dotenv
-- PostgreSQL (psycopg2) for persistent storage
-- GitHub Actions for scheduled ETL automation
+- PostgreSQL (psycopg2)
+- GitHub Actions
 
 

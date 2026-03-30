@@ -7,6 +7,7 @@ occur in the data pipeline (e.g., errors, anomalies, completion).
 
 import logging
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -19,6 +20,37 @@ load_dotenv(BASE_DIR / ".env")
 
 # Configure logging
 logger = logging.getLogger(__name__)
+
+
+def send_notification(message: str) -> None:
+    """Placeholder notifier for future Discord/LINE webhook integration."""
+    print(message)
+
+
+def evaluate_and_notify(
+    predicted_pm25: float,
+    current_time: datetime,
+    last_alert_time: datetime,
+) -> datetime:
+    """
+    Evaluate routine and urgent PM2.5 alerts, then return updated last_alert_time.
+
+    Rules:
+    - Routine update at hours 7, 12, and 17.
+    - Urgent alert when predicted PM2.5 > 54.5 and cooldown >= 2 hours.
+    """
+    routine_hours = {7, 12, 17}
+
+    if current_time.hour in routine_hours:
+        send_notification(f"Routine Update: Predicted PM2.5 is {predicted_pm25}")
+
+    if predicted_pm25 > 54.5:
+        hours_diff = (current_time - last_alert_time).total_seconds() / 3600
+        if hours_diff >= 2:
+            send_notification(f"URGENT: PM2.5 spike predicted ({predicted_pm25})")
+            return current_time
+
+    return last_alert_time
 
 
 def send_discord_alert(message: str) -> bool:
