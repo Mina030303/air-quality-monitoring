@@ -32,6 +32,7 @@ def _i18n():
         "tooltip_time": "時間" if lang=="zh" else "Time",
         "tooltip_aqi": "預測值" if lang=="zh" else "Predicted AQI",
         "aqi_prefix": "AQI" if lang=="zh" else "AQI",
+        "zoom_hint": "可用滑鼠滾輪縮放，拖曳平移圖表。" if lang=="zh" else "Use mouse wheel to zoom and drag to pan.",
         "error_no_data": "找不到預測資料。" if lang=="zh" else "Forecast data not found.",
         "warn_select_county": "請至少選擇一個縣市。" if lang=="zh" else "Please select at least one county for the chart.",
         "warn_no_chart_data": "圖表無資料。" if lang=="zh" else "No data available for selected chart counties.",
@@ -65,8 +66,8 @@ def main():
         .stButton>button:hover {{ background-color: #3b82f6; border: none; }}
         /* 圖表複選 filter：改成藍色系，不用橘色預設 */
         .st-key-forecast_chart_county_multiselect [data-baseweb="tag"] {{
-            background-color: #1e40af !important;
-            border-color: #1e40af !important;
+            background-color: #4f83cc !important;
+            border-color: #4f83cc !important;
         }}
         .st-key-forecast_chart_county_multiselect [data-baseweb="tag"] span {{
             color: #ffffff !important;
@@ -77,13 +78,13 @@ def main():
             stroke: #ffffff !important;
         }}
         .st-key-forecast_chart_county_multiselect div[role="option"][aria-selected="true"] {{
-            background-color: #1e40af !important;
+            background-color: #4f83cc !important;
             color: #ffffff !important;
         }}
         .st-key-forecast_chart_county_multiselect div[data-baseweb="select"] > div:focus,
         .st-key-forecast_chart_county_multiselect div[data-baseweb="select"] > div:focus-within {{
-            border-color: #1e40af !important;
-            box-shadow: 0 0 0 1px #1e40af !important;
+            border-color: #4f83cc !important;
+            box-shadow: 0 0 0 1px #4f83cc !important;
         }}
         /* 標題加強 */
             h1 {{ color: #1e40af; font-size: 2.2rem !important; }}
@@ -177,22 +178,33 @@ def main():
         {"y": 50, "y2": 100, "color": "#fff9e2"}, # 普通
         {"y": 100, "y2": y_max, "color": "#f9e2e2"} # 不良
     ])).mark_rect(opacity=0.4).encode(
-        y=alt.Y("y:Q"), y2="y2:Q", color=alt.Color("color:N", scale=None)
+        y=alt.Y("y:Q"),
+        y2="y2:Q",
+        color=alt.Color("color:N", scale=None),
+        tooltip=alt.value(None),
     )
 
     # 主趨勢線：平滑曲線 + 粗度增加
+    base_encoding = {
+        "x": alt.X("forecast_time:T", title=t["axis_time"], axis=alt.Axis(format="%H:00")),
+        "y": alt.Y("predicted_aqi:Q", title=t["axis_aqi"], scale=alt.Scale(domain=[0, 160])),
+    }
+
     line = alt.Chart(chart_df).mark_line(
         interpolate='monotone', 
         strokeWidth=3.2,
         color='#7ea8d8'
-    ).encode(
-        x=alt.X("forecast_time:T", title=t["axis_time"], axis=alt.Axis(format="%H:00")),
-        y=alt.Y("predicted_aqi:Q", title=t["axis_aqi"], scale=alt.Scale(domain=[0, 160])),
+    ).encode(**base_encoding)
+
+    # 擴大偵測範圍：透明點層專門負責 tooltip 命中。
+    hover_points = alt.Chart(chart_df).mark_circle(size=240, opacity=0).encode(
+        x=base_encoding["x"],
+        y=base_encoding["y"],
         tooltip=[
-            alt.Tooltip("county:N", title=t["tooltip_county"]),
-            alt.Tooltip("forecast_time:T", title=t["tooltip_time"], format="%m/%d %H:%M"),
-            alt.Tooltip("predicted_aqi:Q", title=t["tooltip_aqi"], format=".1f")
-        ]
+            alt.Tooltip("county:N", title="縣市"),
+            alt.Tooltip("predicted_aqi:Q", title="預測 AQI", format=".1f"),
+            alt.Tooltip("forecast_time:T", title="時間", format="%m/%d %H:%M"),
+        ],
     )
 
     # 多縣市圖使用柔和多色；單縣市使用單一柔和藍色。
@@ -209,16 +221,19 @@ def main():
                 ),
             )
         )
+        hover_points = hover_points.encode(color=alt.Color("county:N", legend=None))
 
     # 合併圖表 (去除了 rules 和 points，保持乾淨)
     final_chart = (
-        alt.layer(bands, line)
+        alt.layer(bands, line, hover_points)
         .properties(height=400)
+        .interactive()
         .configure_view(strokeOpacity=0, fill="transparent")
         .configure(background="transparent")
     )
 
     st.altair_chart(final_chart, use_container_width=True)
+    st.caption(t["zoom_hint"])
 
     # --- 4. 底部頁尾 ---
     st.info(t["disclaimer"])
