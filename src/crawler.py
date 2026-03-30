@@ -13,17 +13,23 @@ def upsert_hourly_to_db(records: list[dict[str, Any]], db_url: str) -> None:
     for row in records:
         if "publishtime" in row:
             row["publish_time"] = row.pop("publishtime")
-    # 只 upsert最近6小時
+    # 只 upsert最近6小時（以台灣時間 UTC+8 為準）
     import datetime
-    now = datetime.datetime.utcnow()
+    import pytz
+    tz = datetime.timezone(datetime.timedelta(hours=8))  # 台灣時區
+    now = datetime.datetime.now(tz)
     six_hours_ago = now - datetime.timedelta(hours=6)
-    # 查詢資料庫最大 publish_time
+    # 查詢資料庫最大 publish_time（轉為台灣時區）
     with engine.connect() as conn:
         result = conn.execute(text("SELECT MAX(publish_time) FROM hourly_aqi"))
         max_db_time = result.scalar()
         if max_db_time:
             try:
                 max_db_time = pd.to_datetime(max_db_time)
+                if max_db_time.tzinfo is None:
+                    max_db_time = max_db_time.replace(tzinfo=tz)
+                else:
+                    max_db_time = max_db_time.astimezone(tz)
             except Exception:
                 max_db_time = None
     # 過濾只寫入最近6小時且大於資料庫最大時間的資料
@@ -31,6 +37,11 @@ def upsert_hourly_to_db(records: list[dict[str, Any]], db_url: str) -> None:
     for row in records:
         try:
             t = pd.to_datetime(row.get("publish_time"))
+            # 強制轉為台灣時區
+            if t.tzinfo is None:
+                t = t.replace(tzinfo=tz)
+            else:
+                t = t.astimezone(tz)
         except Exception:
             continue
         if t is pd.NaT:
