@@ -4,6 +4,7 @@ import sqlalchemy
 from sqlalchemy import create_engine, text
 
 def upsert_hourly_to_db(records: list[dict[str, Any]], db_url: str) -> None:
+        import pandas as pd
     if not records:
         print("[INFO] No hourly AQI data to upsert to DB.")
         return
