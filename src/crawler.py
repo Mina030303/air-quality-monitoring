@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 import sqlalchemy
 from sqlalchemy import create_engine, text
@@ -52,7 +53,6 @@ def upsert_hourly_to_db(records: list[dict[str, Any]], db_url: str) -> None:
             """)
             conn.execute(sql, {"county": row["county"], "publish_time": row["publish_time"], "aqi": row["aqi"]})
     print(f"[OK] Upserted {len(filtered)} new hourly AQI rows to DB (last 6 hours)")
-from __future__ import annotations
 
 import csv
 import os
