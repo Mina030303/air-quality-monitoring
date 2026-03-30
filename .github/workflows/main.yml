@@ -52,7 +52,21 @@ jobs:
             echo "No hourly data changes, skip commit."
           else
             git commit -m "Automated hourly data update $(date) [skip ci]"
-            git push origin main
+            for attempt in 1 2 3; do
+              git pull --rebase origin main
+              if git push origin HEAD:main; then
+                echo "Push succeeded on attempt ${attempt}."
+                break
+              fi
+
+              if [ "${attempt}" -eq 3 ]; then
+                echo "ERROR: push failed after 3 attempts."
+                exit 1
+              fi
+
+              echo "Push failed on attempt ${attempt}, retrying in 5s..."
+              sleep 5
+            done
           fi
 
   daily_job:
@@ -98,5 +112,19 @@ jobs:
             echo "No daily data changes, skip commit."
           else
             git commit -m "Automated daily data update $(date) [skip ci]"
-            git push origin main
+            for attempt in 1 2 3; do
+              git pull --rebase origin main
+              if git push origin HEAD:main; then
+                echo "Push succeeded on attempt ${attempt}."
+                break
+              fi
+
+              if [ "${attempt}" -eq 3 ]; then
+                echo "ERROR: push failed after 3 attempts."
+                exit 1
+              fi
+
+              echo "Push failed on attempt ${attempt}, retrying in 5s..."
+              sleep 5
+            done
           fi
