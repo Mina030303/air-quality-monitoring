@@ -36,6 +36,11 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: python src/predict.py
 
+      - name: Generate Spatiotemporal Forecast (predict_spatiotemporal.py)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python src/predict_spatiotemporal.py
+
       - name: Commit & Push data and forecast if changed
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -485,6 +485,7 @@ def callback():
 
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_text_message(event: MessageEvent) -> None:
+
           
     text_msg = event.message.text.strip()
     text_msg_lower = text_msg.lower()
@@ -571,6 +572,17 @@ def handle_text_message(event: MessageEvent) -> None:
         )
         reply_line_message(reply_token, help_msg)
         return
+    
+    # AQI分級查詢
+    elif text_msg in {"aqi分級", "aqi 分級", "aqi等級", "aqi標準", "aqi級距", "aqi說明", "空氣品質分級", "空氣品質標準"}:
+        aqi_guide = (
+            "【AQI 分級標準】\n"
+            "🟢 0~50：良好 (Good)\n"
+            "🟡 51~100：普通 (Moderate)\n"
+            "🟠 101~150：汙染（Polluted）"
+        )
+        reply_line_message(reply_token, aqi_guide)
+        return
 
     # 歡迎訊息
     if text_msg in {"開始", "start", "hi", "你好", "您好", "hello", "哈囉", "嗨", "歡迎"}:
@@ -588,24 +600,6 @@ def handle_text_message(event: MessageEvent) -> None:
         )
         reply_line_message(reply_token, welcome_msg)
         return
-
-    # PM2.5分級查詢
-    if text_msg in {"pm2.5分級", "pm2.5 分級", "pm25分級", "pm25 分級", "pm2.5等級", "pm2.5標準", "pm2.5級距", "pm2.5說明"}:
-        pm25_guide = (
-            "【PM2.5 分級標準】\n"
-            "🟢 0~15.4：良好 (Good)\n"
-            "🟡 15.5~35.4：普通 (Moderate)\n"
-            "🟠 35.5~54.4：對敏感族群不健康 (Unhealthy for Sensitive Groups)\n"
-            "🔴 54.5~150.4：對所有族群不健康 (Unhealthy)\n"
-            "🟣 150.5~250.4：非常不健康 (Very Unhealthy)\n"
-            "🟤 250.5 以上：有害 (Hazardous)\n"
-            "（依據台灣環保署標準）"
-        )
-        reply_line_message(reply_token, pm25_guide)
-        return
-
-    # 功能表（已合併至上方說明指令）
-
 
     if not line_user_id:
         return

@@ -25,17 +25,24 @@ logger = logging.getLogger(__name__)
 
 
 def load_latest_48h_data() -> pd.DataFrame:
-    query = """
-    SELECT county, publish_time, aqi
-    FROM hourly_aqi
-    WHERE publish_time >= NOW() - INTERVAL '48 hours'
-      AND county IS NOT NULL
-      AND county <> ''
-      AND aqi IS NOT NULL
-    ORDER BY publish_time ASC
-    """
-
+    # 先查詢最大 publish_time
+    max_time_query = "SELECT MAX(publish_time) AS max_time FROM hourly_aqi"
     with get_db_connection() as conn:
+        max_time_df = pd.read_sql_query(max_time_query, conn)
+        max_time = max_time_df.loc[0, "max_time"]
+        if pd.isna(max_time):
+            raise ValueError("No data in hourly_aqi table.")
+        # 取最大時間往前推 48 小時
+        query = f"""
+        SELECT county, publish_time, aqi
+        FROM hourly_aqi
+        WHERE publish_time >= TIMESTAMP '{max_time}' - INTERVAL '48 hours'
+          AND publish_time <= TIMESTAMP '{max_time}'
+          AND county IS NOT NULL
+          AND county <> ''
+          AND aqi IS NOT NULL
+        ORDER BY publish_time ASC
+        """
         df = pd.read_sql_query(query, conn)
 
     if df.empty:
@@ -48,7 +55,7 @@ def load_latest_48h_data() -> pd.DataFrame:
     if df.empty:
         raise ValueError("No valid rows remain after cleaning last-48h data.")
 
-    logger.info("Loaded %s recent rows for inference", len(df))
+    logger.info("Loaded %s recent rows for inference (max_time=%s)", len(df), max_time)
     return df
 
 
