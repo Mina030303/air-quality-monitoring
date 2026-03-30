@@ -52,7 +52,7 @@ jobs:
           else
             git commit -m "Automated weekly ML training update [skip ci]"
             for attempt in 1 2 3; do
-              git pull --rebase origin main
+              git pull --rebase --autostash origin main
               if git push origin HEAD:main; then
                 echo "Push succeeded on attempt ${attempt}."
                 break
