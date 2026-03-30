@@ -1,10 +1,14 @@
 
+
 from __future__ import annotations
 import sqlalchemy
 from sqlalchemy import create_engine, text
+import pandas as pd
+import csv
+import os
+
 
 def upsert_hourly_to_db(records: list[dict[str, Any]], db_url: str) -> None:
-        import pandas as pd
     if not records:
         print("[INFO] No hourly AQI data to upsert to DB.")
         return
@@ -46,7 +50,6 @@ def upsert_hourly_to_db(records: list[dict[str, Any]], db_url: str) -> None:
             except Exception:
                 max_db_time = None
         print(f"[DEBUG] max publish_time in DB: {max_db_time}")
-    # 過濾只寫入最近6小時且大於資料庫最大時間的資料
     # 找出 API 資料中最新的 publish_time
     api_times = []
     for row in records:
