@@ -118,18 +118,17 @@ ROUTINE_HOURS = {7, 12, 17}
 _last_routine_marker: str | None = None
 
 
-def format_pm25_status(pm25: float) -> str:
-    if pm25 < 15.5:
-        return "🟢 良好 (Good)"
-    if pm25 < 35.5:
-        return "🟡 普通 (Moderate)"
-    if pm25 < 54.5:
-        return "🟠 對敏感族群不健康 (Unhealthy for Sensitive Groups)"
-    if pm25 < 150.5:
-        return "🔴 對所有族群不健康 (Unhealthy)"
-    if pm25 < 250.5:
-        return "🟣 非常不健康 (Very Unhealthy)"
-    return "🟤 有害 (Hazardous)"
+
+# 台灣環境部 AQI 分級
+def get_aqi_status(aqi: float) -> str:
+    if aqi <= 50:
+        return "🟢 良好"
+    elif aqi <= 100:
+        return "🟡 普通"
+    elif aqi <= 150:
+        return "🔴 汙染"
+    else:
+        return "⚫ 危險"
 
 
 def normalize_county_name(user_input: str) -> str | None:
@@ -326,19 +325,14 @@ def get_user_subscription(line_user_id: str) -> str | None:
 def get_latest_county_avg_pm25(county: str) -> tuple[pd.Timestamp, float] | None:
     query = text(
         """
-        WITH latest_time AS (
-            SELECT MAX(f.forecast_time) AS ts
-            FROM public.forecast f
-        )
-        SELECT
-            lt.ts AS forecast_time,
-            AVG(f.predicted_aqi) AS avg_aqi
+        SELECT MIN(f.forecast_time) AS forecast_time, AVG(f.predicted_aqi) AS avg_aqi
         FROM public.forecast f
-        JOIN latest_time lt ON f.forecast_time = lt.ts
-        JOIN public.air_quality_stations s
-          ON CAST(f.siteid AS TEXT) = CAST(s.siteid AS TEXT)
+        JOIN public.air_quality_stations s ON CAST(f.siteid AS TEXT) = CAST(s.siteid AS TEXT)
         WHERE REPLACE(CAST(s.county AS TEXT), '台', '臺') = :county
-        GROUP BY lt.ts
+          AND f.forecast_time > NOW()
+        GROUP BY f.forecast_time
+        ORDER BY forecast_time ASC
+        LIMIT 1
         """
     )
     with engine.connect() as conn:
@@ -357,20 +351,12 @@ def get_latest_county_avg_pm25(county: str) -> tuple[pd.Timestamp, float] | None
 def get_top3_stations_latest_forecast() -> pd.DataFrame:
     query = text(
         """
-        WITH latest_time AS (
-            SELECT MAX(f.forecast_time) AS ts
-            FROM public.forecast f
-        )
-        SELECT
-            f.forecast_time,
-            CAST(f.siteid AS TEXT) AS siteid,
-            s.sitename,
-            s.county,
-            f.predicted_aqi
+        SELECT f.forecast_time, CAST(f.siteid AS TEXT) AS siteid, s.sitename, s.county, f.predicted_aqi
         FROM public.forecast f
-        JOIN latest_time lt ON f.forecast_time = lt.ts
-        JOIN public.air_quality_stations s
-          ON CAST(f.siteid AS TEXT) = CAST(s.siteid AS TEXT)
+        JOIN public.air_quality_stations s ON CAST(f.siteid AS TEXT) = CAST(s.siteid AS TEXT)
+        WHERE f.forecast_time = (
+            SELECT MIN(f2.forecast_time) FROM public.forecast f2 WHERE f2.forecast_time > NOW()
+        )
         ORDER BY f.predicted_aqi DESC
         LIMIT 3
         """
@@ -382,19 +368,13 @@ def get_top3_stations_latest_forecast() -> pd.DataFrame:
 def get_county_extreme_rows(threshold: float = 54.5) -> pd.DataFrame:
     query = text(
         """
-        WITH latest_time AS (
-            SELECT MAX(f.forecast_time) AS ts
-            FROM public.forecast f
-        )
-        SELECT
-            s.county,
-            lt.ts AS forecast_time,
-            AVG(f.predicted_aqi) AS avg_aqi
+        SELECT s.county, f.forecast_time, AVG(f.predicted_aqi) AS avg_aqi
         FROM public.forecast f
-        JOIN latest_time lt ON f.forecast_time = lt.ts
-        JOIN public.air_quality_stations s
-          ON CAST(f.siteid AS TEXT) = CAST(s.siteid AS TEXT)
-        GROUP BY s.county, lt.ts
+        JOIN public.air_quality_stations s ON CAST(f.siteid AS TEXT) = CAST(s.siteid AS TEXT)
+        WHERE f.forecast_time = (
+            SELECT MIN(f2.forecast_time) FROM public.forecast f2 WHERE f2.forecast_time > NOW()
+        )
+        GROUP BY s.county, f.forecast_time
         HAVING AVG(f.predicted_aqi) >= :threshold
         ORDER BY avg_aqi DESC
         """
@@ -450,9 +430,9 @@ def send_routine_updates(now: datetime) -> None:
     latest_time = pd.to_datetime(top3.iloc[0]["forecast_time"], errors="coerce")
     latest_label = latest_time.strftime("%Y-%m-%d %H:%M") if not pd.isna(latest_time) else "N/A"
 
-    lines = [f"【例行更新 {latest_label}】全台 PM2.5 預測 Top 3"]
+    lines = [f"【例行更新 {latest_label}】全台 AQI (空氣品質指標) 預測 Top 3"]
     for idx, row in enumerate(top3.itertuples(index=False), start=1):
-        status = format_pm25_status(float(row.predicted_aqi))
+        status = get_aqi_status(float(row.predicted_aqi))
         lines.append(f"{idx}. {row.sitename}（{row.county}）: {float(row.predicted_aqi):.1f} | {status}")
 
     message = "\n".join(lines)
@@ -561,10 +541,11 @@ def handle_text_message(event: MessageEvent) -> None:
             if df.empty:
                 reply_line_message(reply_token, f"目前無法取得 {county} 的未來趨勢預測。")
                 return
-            msg = [f"【{county} 未來 6 小時預測】"]
+            msg = [f"【{county} 未來 6 小時 AQI (空氣品質指標) 預測】"]
             for _, row in df.sort_values("forecast_time").iterrows():
                 t = pd.to_datetime(row["forecast_time"]).strftime("%m/%d %H:%M")
-                msg.append(f"{t}：{row['avg_aqi']:.1f}")
+                status = get_aqi_status(row["avg_aqi"])
+                msg.append(f"{t}：{row['avg_aqi']:.1f} {status}")
             reply_line_message(reply_token, "\n".join(msg))
             return
 
@@ -682,14 +663,14 @@ def handle_text_message(event: MessageEvent) -> None:
                 return
 
             forecast_time, avg_aqi = result
-            status = format_pm25_status(avg_aqi)
+            status = get_aqi_status(avg_aqi)
             reply_line_message(
                 reply_token,
                 (
                     f"{county} 最新預測\n"
                     f"時間：{forecast_time.strftime('%Y-%m-%d %H:%M')}\n"
-                    f"平均 AQI：{avg_aqi:.1f}\n"
-                    f"狀態：{status}"
+                    f"AQI (空氣品質指標)：{avg_aqi:.1f}\n"
+                    f"分級：{status}"
                 ),
             )
         except Exception as exc:
