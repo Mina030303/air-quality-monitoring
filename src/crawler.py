@@ -1,3 +1,56 @@
+import sqlalchemy
+from sqlalchemy import create_engine, text
+
+def upsert_hourly_to_db(records: list[dict[str, Any]], db_url: str) -> None:
+    if not records:
+        print("[INFO] No hourly AQI data to upsert to DB.")
+        return
+    engine = create_engine(db_url)
+    valid_cols = {"siteid", "sitename", "county", "aqi", "pollutant", "status", "so2", "co", "o3", "o3_8hr", "pm10", "pm2.5", "no2", "nox", "no", "wind_speed", "wind_direc", "publishtime", "publish_time"}
+    # 轉欄位名統一
+    for row in records:
+        if "publishtime" in row:
+            row["publish_time"] = row.pop("publishtime")
+    # 只 upsert最近6小時
+    import datetime
+    now = datetime.datetime.utcnow()
+    six_hours_ago = now - datetime.timedelta(hours=6)
+    # 查詢資料庫最大 publish_time
+    with engine.connect() as conn:
+        result = conn.execute(text("SELECT MAX(publish_time) FROM hourly_aqi"))
+        max_db_time = result.scalar()
+        if max_db_time:
+            try:
+                max_db_time = pd.to_datetime(max_db_time)
+            except Exception:
+                max_db_time = None
+    # 過濾只寫入最近6小時且大於資料庫最大時間的資料
+    filtered = []
+    for row in records:
+        try:
+            t = pd.to_datetime(row.get("publish_time"))
+        except Exception:
+            continue
+        if t is pd.NaT:
+            continue
+        if t >= six_hours_ago and (not max_db_time or t > max_db_time):
+            filtered.append(row)
+    if not filtered:
+        print("[INFO] No new hourly AQI data in last 6 hours to upsert to DB.")
+        return
+    with engine.begin() as conn:
+        for row in filtered:
+            row = {k: v for k, v in row.items() if k in valid_cols}
+            if not row.get("publish_time") or not row.get("county") or not row.get("aqi"):
+                continue
+            sql = text("""
+                INSERT INTO hourly_aqi (county, publish_time, aqi)
+                VALUES (:county, :publish_time, :aqi)
+                ON CONFLICT (county, publish_time)
+                DO UPDATE SET aqi = EXCLUDED.aqi
+            """)
+            conn.execute(sql, {"county": row["county"], "publish_time": row["publish_time"], "aqi": row["aqi"]})
+    print(f"[OK] Upserted {len(filtered)} new hourly AQI rows to DB (last 6 hours)")
 from __future__ import annotations
 
 import csv
@@ -124,10 +177,13 @@ def save_to_csv(records: list[dict[str, Any]], output_path: Path) -> None:
 
 def main() -> None:
     api_key = os.getenv("API_KEY")
+    db_url = os.getenv("DATABASE_URL")
     hourly_records = fetch_hourly_aqi(api_key=api_key)
     daily_records = fetch_daily_aqi(api_key=api_key)
     save_to_csv(hourly_records, HOURLY_OUTPUT_PATH)
     save_to_csv(daily_records, DAILY_OUTPUT_PATH)
+    if db_url:
+        upsert_hourly_to_db(hourly_records, db_url)
 
 
 if __name__ == "__main__":
