@@ -17,7 +17,7 @@ from sklearn.preprocessing import OneHotEncoder
 
 BASE_DIR = Path(__file__).resolve().parent
 MODEL_DIR = BASE_DIR / "models"
-MODEL_PATH = MODEL_DIR / "aqi_model.pkl"
+MODEL_PATH = MODEL_DIR / "aqi_model.joblib"
 FORECAST_PATH = BASE_DIR / "data" / "forecast.csv"
 
 logging.basicConfig(
@@ -178,6 +178,7 @@ def save_model(artifacts: TrainArtifacts) -> None:
             "feature_order": ["county", "hour", "day_of_week", "is_weekend", "aqi_lag_1", "aqi_lag_24"],
         },
         MODEL_PATH,
+        compress=("xz", 3),
     )
     logger.info("Saved model to %s", MODEL_PATH)
 

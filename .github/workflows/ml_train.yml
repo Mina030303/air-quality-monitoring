@@ -35,8 +35,8 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
 
-          if [ ! -f models/aqi_model.pkl ]; then
-            echo "ERROR: models/aqi_model.pkl was not generated"
+          if [ ! -f models/aqi_model.joblib ]; then
+            echo "ERROR: models/aqi_model.joblib was not generated"
             exit 1
           fi
 
@@ -45,7 +45,7 @@ jobs:
             exit 1
           fi
 
-          git add models/aqi_model.pkl data/forecast.csv
+          git add models/aqi_model.joblib data/forecast.csv
 
           if git diff --staged --quiet; then
             echo "No model artifact changes, skip commit."
