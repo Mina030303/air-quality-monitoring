@@ -9,10 +9,19 @@ def upsert_hourly_to_db(records: list[dict[str, Any]], db_url: str) -> None:
         return
     engine = create_engine(db_url)
     valid_cols = {"siteid", "sitename", "county", "aqi", "pollutant", "status", "so2", "co", "o3", "o3_8hr", "pm10", "pm2.5", "no2", "nox", "no", "wind_speed", "wind_direc", "publishtime", "publish_time"}
-    # 轉欄位名統一
+    # 標準化所有可能的 publish_time 欄位名稱
+    publish_time_aliases = [
+        "publish_time", "PublishTime", "publishTime", "publishtime", "datacreationdate", "DataCreationDate", "發布時間", "PublishingDate", "RecordTime"
+    ]
     for row in records:
-        if "publishtime" in row:
-            row["publish_time"] = row.pop("publishtime")
+        for alias in publish_time_aliases:
+            if alias in row:
+                row["publish_time"] = row[alias]
+                break
+    # Debug print 前 3 筆資料
+    print("[DEBUG] First 3 records before upsert:")
+    for r in records[:3]:
+        print(r)
     # 使用 Asia/Taipei 時區
     import datetime
     try:
