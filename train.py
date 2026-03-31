@@ -1,18 +1,21 @@
 from __future__ import annotations
 import logging
 import os
+import gc  # 記憶體垃圾回收工具
 from pathlib import Path
 import joblib
 import pandas as pd
-from sqlalchemy import create_engine, text
+import numpy as np
+from sqlalchemy import create_engine
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_absolute_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 from dotenv import load_dotenv
 
-# 設定路徑
+# --- 路徑設定 ---
 BASE_DIR = Path(__file__).resolve().parent.parent
 MODEL_DIR = BASE_DIR / "models"
 MODEL_PATH = MODEL_DIR / "aqi_site_model.joblib"
@@ -21,17 +24,16 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 # ==========================================
-# MIS 控制台：手動切換訓練模式
+# MIS 控制台：模式切換
 # ==========================================
-# 第一次跑請設為 True (3 年)；之後定期更新設為 False (30 天)
-INITIAL_TRAIN = True 
+# 第一次跑大數據請設為 True；之後定期更新設為 False
+INITIAL_TRAIN = False 
 
 def get_db_url():
     load_dotenv(BASE_DIR / ".env")
     return os.getenv("DATABASE_URL")
 
 def load_training_data(db_url: str, days: int) -> pd.DataFrame:
-    # 這裡依照你的需求，動態決定抓取天數 (3年 = 1095天)
     interval = f"{days} days"
     query = f"""
     SELECT county, site_name AS site, publish_time, aqi
@@ -59,12 +61,12 @@ def build_features(raw_df: pd.DataFrame) -> pd.DataFrame:
     county_mean = site_hourly.groupby(["county", "publish_time"])["aqi"].mean().rename("county_mean_aqi").reset_index()
     site_hourly = site_hourly.merge(county_mean, on=["county", "publish_time"], how="left")
 
-    # 3. 時間與滯後特徵 (Lag)
+    # 3. 時間特徵
     site_hourly["hour"] = site_hourly["publish_time"].dt.hour
     site_hourly["day_of_week"] = site_hourly["publish_time"].dt.dayofweek
     site_hourly["is_weekend"] = (site_hourly["day_of_week"] >= 5).astype(int)
     
-    # 計算 Lag (訓練時採用嚴格模式)
+    # 4. 滯後特徵 (Lag)
     site_hourly["aqi_lag_1"] = site_hourly.groupby("site")["aqi"].shift(1)
     site_hourly["aqi_lag_24"] = site_hourly.groupby("site")["aqi"].shift(24)
     site_hourly["county_mean_aqi_lag_1"] = site_hourly.groupby("site")["county_mean_aqi"].shift(1)
@@ -73,47 +75,71 @@ def build_features(raw_df: pd.DataFrame) -> pd.DataFrame:
 
 def main():
     db_url = get_db_url()
-    days_to_load = 900 if INITIAL_TRAIN else 30
-    logger.info(f"開始訓練 Pipeline (模式: {'初次大批量' if INITIAL_TRAIN else '定期更新'}, 天數: {days_to_load})")
+    # 2.7 年約為 980 天，若記憶體仍吃緊，可降至 600
+    days_to_load = 980 if INITIAL_TRAIN else 30
     
-    # 執行流程
+    logger.info(f"--- 開始訓練 Pipeline (模式: {'初次大批量' if INITIAL_TRAIN else '定期更新'}) ---")
+    
+    # 1. 載入資料
     raw_df = load_training_data(db_url, days_to_load)
+    logger.info(f"成功載入資料: {len(raw_df)} 筆")
+
+    # 2. 特徵工程
     feature_df = build_features(raw_df)
-
-    # 1. 印出前 5 筆資料，確認欄位名稱 (site_name, aqi, pm2.5...)
-    print("--- 資料前 5 筆 ---")
-    print(raw_df.head())
-
-    # 2. 印出資料表的詳細資訊 (這最重要！)
-    # 可以看到總筆數 (RangeIndex) 和每個欄位的空值狀況
-    print("\n--- 資料表結構資訊 ---")
-    print(raw_df.info())
-
-    # 3. 印出統計資訊 (確認 AQI 有沒有奇怪的負數或離群值)
-    print("\n--- 數值統計概況 ---")
-    print(raw_df.describe())
-
-    # 4. 確認時間範圍 (驗證是否真的有 7 年)
-    print("\n--- 資料時間區間 ---")
-    print(f"最早時間: {raw_df['publish_time'].min()}")
-    print(f"最晚時間: {raw_df['publish_time'].max()}")
     
-    # 準備模型
-    feature_cols = ["county", "site", "hour", "day_of_week", "is_weekend", "aqi_lag_1", "aqi_lag_24", "county_mean_aqi_lag_1"]
-    x, y = feature_df[feature_cols], feature_df["aqi"]
+    # 【記憶體優化 A】釋放原始資料，因為特徵已經做好了
+    del raw_df
+    gc.collect()
+
+    # 3. 準備模型輸入
+    feature_cols = [
+        "county", "site", "hour", "day_of_week", "is_weekend", 
+        "aqi_lag_1", "aqi_lag_24", "county_mean_aqi_lag_1"
+    ]
+    x = feature_df[feature_cols]
+    y = feature_df["aqi"]
+    
+    # 切分訓練與測試集
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
 
+    # 【記憶體優化 B】釋放大型 DataFrame，只留下訓練用的陣列
+    del feature_df
+    gc.collect()
+
+    # 4. 定義模型管線 (輕量化參數)
     pipeline = Pipeline([
-        ("preprocessor", ColumnTransformer([("cat", OneHotEncoder(handle_unknown="ignore"), ["county", "site"])], remainder="passthrough")),
-        ("model", RandomForestRegressor(n_estimators=300, max_depth=15, random_state=42, n_jobs=-1))
+        ("preprocessor", ColumnTransformer([
+            ("cat", OneHotEncoder(handle_unknown="ignore"), ["county", "site"])
+        ], remainder="passthrough")),
+        ("model", RandomForestRegressor(
+            n_estimators=100,  # 100 顆樹是效能與記憶體的最佳平衡點
+            max_depth=12,      # 深度 12 足以抓取 AQI 規律且不會讓模型爆炸
+            min_samples_leaf=5,
+            random_state=42,
+            n_jobs=-1          # 使用全核心運算
+        ))
     ])
     
+    # 5. 訓練模型
+    logger.info("模型正在訓練中，風扇轉動為正常現象...")
     pipeline.fit(x_train, y_train)
     
-    # 儲存模型包
+    # 6. 驗證正確率
+    y_pred = pipeline.predict(x_test)
+    mae = mean_absolute_error(y_test, y_pred)
+    r2 = r2_score(y_test, y_pred)
+
+    print("-" * 30)
+    print(f"模型訓練完成！")
+    print(f"正確率指標 (Evaluation):")
+    print(f"   - R-squared (R2): {r2:.4f} (愈接近 1 愈好)")
+    print(f"   - Mean Absolute Error (MAE): {mae:.2f} (平均誤差點數)")
+    print("-" * 30)
+
+    # 7. 儲存模型
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
     joblib.dump({"model": pipeline, "feature_order": feature_cols}, MODEL_PATH)
-    logger.info(f"模型訓練完成並存檔至 {MODEL_PATH}")
+    logger.info(f"模型已存檔至: {MODEL_PATH}")
 
 if __name__ == "__main__":
     main()

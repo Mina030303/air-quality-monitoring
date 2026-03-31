@@ -28,7 +28,7 @@ jobs:
       - name: Train model and generate forecast
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: python train_model.py
+        run: python train.py
 
       - name: Commit and push model artifacts
         run: |
