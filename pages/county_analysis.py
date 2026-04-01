@@ -230,6 +230,92 @@ with tab_overview:
     with st.container(key="county_risk_bubble_chart"):
         st.altair_chart(risk_chart, use_container_width=True)
 
+    # ===== 綜合分析結論（僅概覽圖顯示） =====
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("---")
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    st.markdown(
+        f'<div style="font-size: 1.05rem; font-weight: 600; margin-bottom: 16px;">{t("county_overall_insight_title")}</div>',
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        f'<div style="font-size: 0.98rem; line-height: 1.8; color:#3a4860; margin-bottom: 24px;">{t("county_overall_insight_body")}</div>',
+        unsafe_allow_html=True,
+    )
+
+    col_risk, col_good = st.columns(2)
+
+    with col_risk:
+        st.markdown(f"**{t('county_high_risk_label')}**")
+        if risk_df.empty:
+            st.info(t("stable_air_quality"))
+        else:
+            risk_text = "、".join(risk_df["county"].head(5).tolist())
+            st.info(risk_text)
+
+    with col_good:
+        st.markdown(f"**{t('county_good_label')}**")
+        good_df_sorted = good_df.sort_values(["mean_aqi", "std_aqi"], ascending=[True, True])
+        if good_df_sorted.empty:
+            st.info(t("no_data"))
+        else:
+            good_text = "、".join(good_df_sorted["county"].head(5).tolist())
+            st.info(good_text)
+
+    # ===== 詳細資訊 Expander（僅概覽圖顯示） =====
+    st.markdown("---")
+
+    with st.expander(t("details_info"), expanded=False):
+        st.markdown(f"#### {t('county_name_comparison')}")
+
+        county_ref_df = pd.DataFrame(
+            [
+                {"county_zh": "基隆市", "county_en": "Keelung City", "county_abbrev": "KEL"},
+                {"county_zh": "新北市", "county_en": "New Taipei City", "county_abbrev": "NTPC"},
+                {"county_zh": "臺北市", "county_en": "Taipei City", "county_abbrev": "TPE"},
+                {"county_zh": "桃園市", "county_en": "Taoyuan City", "county_abbrev": "TYN"},
+                {"county_zh": "新竹縣", "county_en": "Hsinchu County", "county_abbrev": "HSQ"},
+                {"county_zh": "新竹市", "county_en": "Hsinchu City", "county_abbrev": "HSZ"},
+                {"county_zh": "苗栗縣", "county_en": "Miaoli County", "county_abbrev": "MIA"},
+                {"county_zh": "臺中市", "county_en": "Taichung City", "county_abbrev": "TXG"},
+                {"county_zh": "彰化縣", "county_en": "Changhua County", "county_abbrev": "CHA"},
+                {"county_zh": "南投縣", "county_en": "Nantou County", "county_abbrev": "NAN"},
+                {"county_zh": "雲林縣", "county_en": "Yunlin County", "county_abbrev": "YUN"},
+                {"county_zh": "嘉義縣", "county_en": "Chiayi County", "county_abbrev": "CYQ"},
+                {"county_zh": "嘉義市", "county_en": "Chiayi City", "county_abbrev": "CYI"},
+                {"county_zh": "臺南市", "county_en": "Tainan City", "county_abbrev": "TNN"},
+                {"county_zh": "高雄市", "county_en": "Kaohsiung City", "county_abbrev": "KHH"},
+                {"county_zh": "屏東縣", "county_en": "Pingtung County", "county_abbrev": "PIF"},
+                {"county_zh": "宜蘭縣", "county_en": "Yilan County", "county_abbrev": "ILA"},
+                {"county_zh": "花蓮縣", "county_en": "Hualien County", "county_abbrev": "HUA"},
+                {"county_zh": "臺東縣", "county_en": "Taitung County", "county_abbrev": "TTT"},
+                {"county_zh": "澎湖縣", "county_en": "Penghu County", "county_abbrev": "PEN"},
+                {"county_zh": "金門縣", "county_en": "Kinmen County", "county_abbrev": "KIN"},
+                {"county_zh": "連江縣", "county_en": "Lianchiang County", "county_abbrev": "LIE"},
+            ]
+        ).rename(
+            columns={
+                "county_zh": t("county_zh"),
+                "county_en": t("county_en"),
+                "county_abbrev": t("county_abbrev"),
+            }
+        )
+
+        st.dataframe(county_ref_df, use_container_width=True, hide_index=True)
+
+        st.markdown(f"#### {t('classification_criteria')}")
+        st.markdown(f"""
+        **{t('county_high_risk_criteria_label')}**：
+        - {t('county_high_risk_criteria_line1').format(risk_threshold=AQI_RISK_THRESHOLD)}
+        - {t('county_high_risk_criteria_line2').format(mean_avg=mean_avg, std_avg=std_avg)}
+
+        **{t('county_good_criteria_label')}**：
+        - {t('county_good_criteria_line1').format(good_threshold=AQI_GOOD_THRESHOLD)}
+        - {t('county_good_criteria_line2').format(good_threshold=AQI_GOOD_THRESHOLD, mean_avg=mean_avg)}
+        """)
+
 with tab_metrics:
     st.markdown(f"### {t('indicator_ranking')}")
     
@@ -323,105 +409,4 @@ with tab_data:
     )
 
 
-# ===== 綜合分析結論 =====
-st.markdown("<br><br>", unsafe_allow_html=True)
-st.markdown("---")
-st.markdown("<br>", unsafe_allow_html=True)
-
-st.markdown(
-    f'<div style="font-size: 1.05rem; font-weight: 600; margin-bottom: 16px;">{t("county_overall_insight_title")}</div>',
-    unsafe_allow_html=True,
-)
-
-st.markdown(
-    f'<div style="font-size: 0.98rem; line-height: 1.8; color:#3a4860; margin-bottom: 24px;">{t("county_overall_insight_body")}</div>',
-    unsafe_allow_html=True,
-)
-
-col_risk, col_good = st.columns(2)
-
-with col_risk:
-    st.markdown(f"**{t('county_high_risk_label')}**")
-    if risk_df.empty:
-        st.info(t("stable_air_quality"))
-    else:
-        risk_text = "、".join(risk_df["county"].head(5).tolist())
-        st.info(risk_text)
-
-with col_good:
-    st.markdown(f"**{t('county_good_label')}**")
-    good_df_sorted = good_df.sort_values(["mean_aqi", "std_aqi"], ascending=[True, True])
-    if good_df_sorted.empty:
-        st.info(t("no_data"))
-    else:
-        good_text = "、".join(good_df_sorted["county"].head(5).tolist())
-        st.info(good_text)
-
-# ===== 詳細資訊 Expander =====
-st.markdown("---")
-
-with st.expander(t("details_info"), expanded=False):
-    st.markdown(f"#### {t('county_name_comparison')}")
-    
-    county_ref_df = pd.DataFrame(
-        [
-            {"county_zh": "基隆市", "county_en": "Keelung City", "county_abbrev": "KEL"},
-            {"county_zh": "新北市", "county_en": "New Taipei City", "county_abbrev": "NTPC"},
-            {"county_zh": "臺北市", "county_en": "Taipei City", "county_abbrev": "TPE"},
-            {"county_zh": "桃園市", "county_en": "Taoyuan City", "county_abbrev": "TYN"},
-            {"county_zh": "新竹縣", "county_en": "Hsinchu County", "county_abbrev": "HSQ"},
-            {"county_zh": "新竹市", "county_en": "Hsinchu City", "county_abbrev": "HSZ"},
-            {"county_zh": "苗栗縣", "county_en": "Miaoli County", "county_abbrev": "MIA"},
-            {"county_zh": "臺中市", "county_en": "Taichung City", "county_abbrev": "TXG"},
-            {"county_zh": "彰化縣", "county_en": "Changhua County", "county_abbrev": "CHA"},
-            {"county_zh": "南投縣", "county_en": "Nantou County", "county_abbrev": "NAN"},
-            {"county_zh": "雲林縣", "county_en": "Yunlin County", "county_abbrev": "YUN"},
-            {"county_zh": "嘉義縣", "county_en": "Chiayi County", "county_abbrev": "CYQ"},
-            {"county_zh": "嘉義市", "county_en": "Chiayi City", "county_abbrev": "CYI"},
-            {"county_zh": "臺南市", "county_en": "Tainan City", "county_abbrev": "TNN"},
-            {"county_zh": "高雄市", "county_en": "Kaohsiung City", "county_abbrev": "KHH"},
-            {"county_zh": "屏東縣", "county_en": "Pingtung County", "county_abbrev": "PIF"},
-            {"county_zh": "宜蘭縣", "county_en": "Yilan County", "county_abbrev": "ILA"},
-            {"county_zh": "花蓮縣", "county_en": "Hualien County", "county_abbrev": "HUA"},
-            {"county_zh": "臺東縣", "county_en": "Taitung County", "county_abbrev": "TTT"},
-            {"county_zh": "澎湖縣", "county_en": "Penghu County", "county_abbrev": "PEN"},
-            {"county_zh": "金門縣", "county_en": "Kinmen County", "county_abbrev": "KIN"},
-            {"county_zh": "連江縣", "county_en": "Lianchiang County", "county_abbrev": "LIE"},
-        ]
-    ).rename(
-        columns={
-            "county_zh": t("county_zh"),
-            "county_en": t("county_en"),
-            "county_abbrev": t("county_abbrev"),
-        }
-    )
-    
-    st.dataframe(county_ref_df, use_container_width=True, hide_index=True)
-    
-    st.markdown(f"#### {t('classification_criteria')}")
-    st.markdown(f"""
-    **{t('county_high_risk_criteria_label')}**：
-    - {t('county_high_risk_criteria_line1').format(risk_threshold=AQI_RISK_THRESHOLD)}
-    - {t('county_high_risk_criteria_line2').format(mean_avg=mean_avg, std_avg=std_avg)}
-
-    **{t('county_good_criteria_label')}**：
-    - {t('county_good_criteria_line1').format(good_threshold=AQI_GOOD_THRESHOLD)}
-    - {t('county_good_criteria_line2').format(good_threshold=AQI_GOOD_THRESHOLD, mean_avg=mean_avg)}
-    """)
-    
-    st.markdown(f"#### {t('raw_data_preview')}")
-    preview_df = stability_df[
-        ["county", "mean_aqi", "std_aqi", "high_pollution_ratio", "total_count"]
-    ].head(20).copy()
-    preview_df = preview_df.rename(
-        columns={
-            "county": t("county"),
-            "mean_aqi": t("county_mean_aqi"),
-            "std_aqi": t("county_std_aqi"),
-            "high_pollution_ratio": t("county_high_pol_ratio"),
-            "total_count": t("county_total_count"),
-        }
-    )
-    
-    st.dataframe(preview_df, use_container_width=True, hide_index=True)
 

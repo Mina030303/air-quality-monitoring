@@ -151,4 +151,17 @@ with col5:
     if st.button(t("home_button_spike"), key="home_btn_spike", use_container_width=True):
         st.switch_page("pages/spike_detection.py")
 
+with col6:
+    st.markdown(
+        f'''
+        <div class="custom-card">
+            <div class="card-title">{t("forecast_menu")}</div>
+            <div class="card-text">{t("forecast_desc")}</div>
+        </div>
+        ''',
+        unsafe_allow_html=True,
+    )
+    if st.button(t("home_button_forecast"), key="home_btn_forecast", use_container_width=True):
+        st.switch_page("pages/forecast.py")
+
 st.markdown("</div>", unsafe_allow_html=True)

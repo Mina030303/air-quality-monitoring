@@ -62,14 +62,8 @@ def get_aqi_status(aqi: float) -> str:
         return "🟢 良好"
     elif aqi <= 100:
         return "🟡 普通"
-    elif aqi <= 150:
-        return "🟠 汙染"
-    elif aqi <= 200:
-        return "🔴 不健康"
-    elif aqi <= 300:
-        return "🟣 非常不健康"
     else:
-        return "🟤 危害"
+        return "🔴 污染"
 
 def push_line_message(user_id: str, message: str) -> bool:
     try:
@@ -286,9 +280,9 @@ def handle_text_message(event: MessageEvent) -> None:
     elif text_msg in {"aqi分級", "aqi 分級", "aqi等級", "aqi標準", "aqi級距", "aqi說明", "空氣品質分級", "空氣品質標準"}:
         aqi_guide = (
             "【AQI 分級標準】\n"
-            "🟢 0~50：良好 (Good)\n"
-            "🟡 51~100：普通 (Moderate)\n"
-            "🟠 101~150：汙染 (Polluted)"
+            "🟢 良好 / Green (0-50): 可正常進行戶外活動\n"
+            "🟡 普通 / Yellow (51-100): 空氣品質可接受，但敏感族群（如呼吸道疾病患者）應減少體力消耗\n"
+            "🔴 污染 / Red (101+): 已屬空氣污染，請減少戶外活動"
         )
         reply_line_message(reply_token, aqi_guide)
         return

@@ -6,38 +6,10 @@ import streamlit as st
 
 # 插入路徑以載入自定義 utils
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from utils import apply_style, render_global_sidebar
+from utils import apply_style, render_global_sidebar, t
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 FORECAST_PATH = BASE_DIR / "data" / "forecast.csv"
-
-# --- 介面文字設定 ---
-def _lang(): return st.session_state.get("lang", "zh")
-
-def _i18n():
-    lang = _lang()
-    return {
-        "title": "AQI 未來 24 小時預測系統" if lang=="zh" else "AQI 24H Forecast System",
-        "select_label": "查看對象" if lang=="zh" else "View Selection",
-        "all": "全台灣總覽" if lang=="zh" else "National Overview",
-        "chart_filter_label": "圖表縣市（可複選）" if lang=="zh" else "Chart Counties (multi-select)",
-        "summary_title": "數據摘要" if lang=="zh" else "Summary",
-        "metric_avg": "平均預測值" if lang=="zh" else "Avg Forecast",
-        "metric_peak": "預測最高峰" if lang=="zh" else "Peak Forecast",
-        "metric_best": "最清新時段" if lang=="zh" else "Best Air Quality",
-        "chart_title": "AQI 趨勢預測圖" if lang=="zh" else "AQI Trend Forecast",
-        "axis_time": "預測時間" if lang=="zh" else "Forecast Time",
-        "axis_aqi": "預測 AQI" if lang=="zh" else "Predicted AQI",
-        "tooltip_county": "縣市" if lang=="zh" else "County",
-        "tooltip_time": "時間" if lang=="zh" else "Time",
-        "tooltip_aqi": "預測值" if lang=="zh" else "Predicted AQI",
-        "aqi_prefix": "AQI" if lang=="zh" else "AQI",
-        "zoom_hint": "可用滑鼠滾輪縮放，拖曳平移圖表。" if lang=="zh" else "Use mouse wheel to zoom and drag to pan.",
-        "error_no_data": "找不到預測資料。" if lang=="zh" else "Forecast data not found.",
-        "warn_select_county": "請至少選擇一個縣市。" if lang=="zh" else "Please select at least one county for the chart.",
-        "warn_no_chart_data": "圖表無資料。" if lang=="zh" else "No data available for selected chart counties.",
-        "disclaimer": "此數據由 XGBoost 模型計算，僅供參考。" if lang=="zh" else "⚠️ AI generated; for reference only."
-    }
 
 # --- 資料讀取 ---
 def load_data():
@@ -51,7 +23,6 @@ def load_data():
 def main():
     apply_style()
     render_global_sidebar("pages/forecast.py")
-    t = _i18n()
 
     # --- 自定義淺藍主題 CSS ---
     st.markdown(f"""
@@ -62,6 +33,10 @@ def main():
         [data-testid="stMetricLabel"] {{ color: #60a5fa; }}
         /* 按鈕與下拉選單顏色調整 */
         .stSelectbox div[data-baseweb="select"] {{ border-color: #bfdbfe; }}
+        .stSelectbox div[data-baseweb="select"] > div,
+        .stMultiSelect div[data-baseweb="select"] > div {{
+            background-color: #ffffff !important;
+        }}
         .stButton>button {{ background-color: #60a5fa; color: white; border-radius: 8px; border: none; }}
         .stButton>button:hover {{ background-color: #3b82f6; border: none; }}
         /* 圖表複選 filter：改成藍色系，不用橘色預設 */
@@ -86,8 +61,8 @@ def main():
             border-color: #4f83cc !important;
             box-shadow: 0 0 0 1px #4f83cc !important;
         }}
-        /* 標題加強 */
-            h1 {{ color: #1e40af; font-size: 2.2rem !important; }}
+        /* 標題顏色沿用藍色主題 */
+            h1 {{ color: #1e40af; }}
         /* Altair 圖表透明背景 */
         [data-testid="stVegaLiteChart"] .vega-embed,
         [data-testid="stVegaLiteChart"] canvas,
@@ -97,28 +72,38 @@ def main():
         </style>
     """, unsafe_allow_html=True)
 
-    st.title(t["title"])
+    st.title(t("forecast_title"))
     
     df = load_data()
     if df.empty:
-        st.error("Forecast data has expired")
+        st.error(t("forecast_error_expired_data"))
         st.stop()
 
     # --- 1. 頂部導覽篩選區 (按鈕化布局) ---
     counties = sorted(df["county"].unique().tolist())
-    
+    options = [t("forecast_all")] + counties
+    current_selection = st.session_state.get("forecast_main_select", t("forecast_all"))
+    if current_selection not in options:
+        current_selection = t("forecast_all")
+
+    summary_title_name = current_selection if current_selection in counties else t("forecast_all")
+    st.write(f"### {summary_title_name} {t('forecast_summary_title')}")
+
+    st.caption(t("forecast_select_hint"))
+
     # 使用 selectbox 作為主要切換器，預設為「全體」
     selection = st.selectbox(
-        t["select_label"],
-        options=[t["all"]] + counties,
-        index=0,
+        t("forecast_select_label"),
+        options=options,
+        index=options.index(current_selection),
+        key="forecast_main_select",
         label_visibility="collapsed",
     )
 
     # 根據選擇過濾資料
-    if selection == t["all"]:
+    if selection == t("forecast_all"):
         display_df = df.copy()
-        display_name = t["all"]
+        display_name = t("forecast_all")
     else:
         display_df = df[df["county"] == selection].copy()
         display_name = selection
@@ -128,47 +113,56 @@ def main():
     peak_row = display_df.loc[display_df["predicted_aqi"].idxmax()]
     best_row = display_df.loc[display_df["predicted_aqi"].idxmin()]
 
-    st.write(f"### {display_name} {t['summary_title']}")
     st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
     m_col1, m_col2, m_col3 = st.columns(3)
-    
+
     with m_col1:
-        st.metric(t["metric_avg"], f"{avg_val:.1f}")
+        st.metric(t("forecast_metric_avg"), f"{avg_val:.1f}")
     with m_col2:
-        st.metric(t["metric_peak"], f"{peak_row['predicted_aqi']:.1f}", 
+        st.metric(t("forecast_metric_peak"), f"{peak_row['predicted_aqi']:.1f}",
                   delta=f"{peak_row['forecast_time'].strftime('%H:00')}", delta_color="inverse")
     with m_col3:
-        st.metric(t["metric_best"], best_row["forecast_time"].strftime("%H:00"), 
-                  delta=f"{t['aqi_prefix']} {best_row['predicted_aqi']:.1f}", delta_color="normal")
+        st.metric(t("forecast_metric_best"), best_row["forecast_time"].strftime("%H:00"),
+                  delta=f"{t('forecast_aqi_prefix')} {best_row['predicted_aqi']:.1f}", delta_color="normal")
 
     st.divider()
 
-    chart_options = [t["all"]] + counties
+    selected_for_title = st.session_state.get("forecast_chart_county_multiselect", [t("forecast_all")])
+    if t("forecast_all") in selected_for_title:
+        chart_title_name = t("forecast_all")
+    else:
+        selected_title_counties = [c for c in selected_for_title if c in counties]
+        chart_title_name = ", ".join(selected_title_counties) if selected_title_counties else t("forecast_all")
+
+    st.subheader(f"{chart_title_name} {t('forecast_chart_title')}")
+
+    chart_options = [t("forecast_all")] + counties
+    st.caption(t("forecast_chart_filter_label"))
     chart_selected = st.multiselect(
-        t["chart_filter_label"],
+        t("forecast_chart_filter_label"),
         options=chart_options,
-        default=[t["all"]],
+        default=[t("forecast_all")],
         key="forecast_chart_county_multiselect",
+        label_visibility="collapsed",
     )
+    st.caption(t("forecast_zoom_hint"))
 
     if not chart_selected:
-        st.warning(t["warn_select_county"])
+        st.warning(t("forecast_warn_select_county"))
         st.stop()
 
     # --- 3. 視覺化圖表區 (去除了打叉模式，回歸簡潔) ---
-    if t["all"] in chart_selected:
+    if t("forecast_all") in chart_selected:
         chart_df = df.copy()
-        chart_name = t["all"]
+        chart_name = t("forecast_all")
     else:
         selected_chart_counties = [c for c in chart_selected if c in counties]
         chart_df = df[df["county"].isin(selected_chart_counties)].copy()
         chart_name = ", ".join(selected_chart_counties)
 
     if chart_df.empty:
-        st.warning(t["warn_no_chart_data"])
+        st.warning(t("forecast_warn_no_chart_data"))
         st.stop()
-
-    st.subheader(f"{chart_name} {t['chart_title']}")
 
     # 設置背景顏色區塊 (標準 AQI 分級)
     y_max = 160
@@ -186,8 +180,8 @@ def main():
 
     # 主趨勢線：平滑曲線 + 粗度增加
     base_encoding = {
-        "x": alt.X("forecast_time:T", title=t["axis_time"], axis=alt.Axis(format="%H:00")),
-        "y": alt.Y("predicted_aqi:Q", title=t["axis_aqi"], scale=alt.Scale(domain=[0, 160])),
+        "x": alt.X("forecast_time:T", title=t("forecast_axis_time"), axis=alt.Axis(format="%H:00")),
+        "y": alt.Y("predicted_aqi:Q", title=t("forecast_axis_aqi"), scale=alt.Scale(domain=[0, 160])),
     }
 
     line = alt.Chart(chart_df).mark_line(
@@ -201,9 +195,9 @@ def main():
         x=base_encoding["x"],
         y=base_encoding["y"],
         tooltip=[
-            alt.Tooltip("county:N", title="縣市"),
-            alt.Tooltip("predicted_aqi:Q", title="預測 AQI", format=".1f"),
-            alt.Tooltip("forecast_time:T", title="時間", format="%m/%d %H:%M"),
+            alt.Tooltip("county:N", title=t("forecast_tooltip_county")),
+            alt.Tooltip("predicted_aqi:Q", title=t("forecast_tooltip_aqi"), format=".1f"),
+            alt.Tooltip("forecast_time:T", title=t("forecast_tooltip_time"), format="%m/%d %H:%M"),
         ],
     )
 
@@ -233,10 +227,10 @@ def main():
     )
 
     st.altair_chart(final_chart, use_container_width=True)
-    st.caption(t["zoom_hint"])
 
     # --- 4. 底部頁尾 ---
-    st.info(t["disclaimer"])
+    st.info(t("forecast_disclaimer"))
+    st.caption(t("forecast_model_logic"))
 
 if __name__ == "__main__":
     main()

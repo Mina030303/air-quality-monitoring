@@ -40,13 +40,13 @@ def render_global_sidebar(current_page: str):
     set_language()
 
     pages = [
-        ("app.py", t("home_menu")),
+        ("app.py", t("back_home_button")),
         ("pages/trend.py", t("trend")),
         ("pages/county_analysis.py", t("county_overview_title")),
         ("pages/county_risk.py", t("county_risk_title")),
-        ("pages/forecast.py", "AQI Forecast"),
         ("pages/high_pollution_hours.py", t("hours")),
         ("pages/spike_detection.py", t("spike_title")),
+        ("pages/forecast.py", t("forecast_title")),
     ]
 
     for page_path, label in pages:
