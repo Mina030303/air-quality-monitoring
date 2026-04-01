@@ -127,6 +127,7 @@ def normalize_county_name(name: str) -> str | None:
         "澎湖": "澎湖縣", "澎湖縣": "澎湖縣",
         "金門": "金門縣", "金門縣": "金門縣",
         "連江": "連江縣", "連江縣": "連江縣",
+        "馬祖": "連江縣"
     }
     if name in county_map:
         return county_map[name]
