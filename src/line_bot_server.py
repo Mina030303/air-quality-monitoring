@@ -215,7 +215,7 @@ def handle_text_message(event: MessageEvent) -> None:
     if not line_user_id:
         return
 
-    # 1. 全台概況
+    # 1. 全台概況（縣市排名）
     if text_msg in {"全台概況", "全台", "概況"}:
         time_query = text("SELECT MIN(forecast_time) AS ft FROM public.forecast WHERE forecast_time >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Taipei')")
         with engine.connect() as conn:
@@ -225,10 +225,11 @@ def handle_text_message(event: MessageEvent) -> None:
                 reply_line_message(reply_token, "目前暫無預測數據，請稍後再試。")
                 return
             query = text("""
-                SELECT s.county, s.sitename, f.predicted_aqi
+                SELECT s.county, AVG(f.predicted_aqi) AS avg_aqi
                 FROM public.forecast f
                 JOIN public.air_quality_stations s ON CAST(f.siteid AS TEXT) = CAST(s.siteid AS TEXT)
                 WHERE f.forecast_time = :ft
+                GROUP BY s.county
             """)
             df = pd.read_sql_query(query, conn, params={"ft": ft})
             
@@ -236,17 +237,17 @@ def handle_text_message(event: MessageEvent) -> None:
             reply_line_message(reply_token, "目前暫無預測數據，請稍後再試。")
             return
             
-        worst = df.nlargest(3, "predicted_aqi")
-        best = df.nsmallest(3, "predicted_aqi")
-        msg = ["【全台 AQI 測站概況】\n\n空氣最糟 Top 3："]
+        worst = df.nlargest(3, "avg_aqi")
+        best = df.nsmallest(3, "avg_aqi")
+        msg = ["【全台 AQI 縣市概況】\n\n空氣最差 Top 3 縣市："]
         for _, row in worst.iterrows():
-            status = get_aqi_status(row["predicted_aqi"])
-            msg.append(f"[{row['county']}] {row['sitename']}：{row['predicted_aqi']:.0f} {status}")
+            status = get_aqi_status(row["avg_aqi"])
+            msg.append(f"{row['county']}：{row['avg_aqi']:.0f} {status}")
             
-        msg.append("\n空氣最佳 Top 3：")
+        msg.append("\n空氣最好 Top 3 縣市：")
         for _, row in best.iterrows():
-            status = get_aqi_status(row["predicted_aqi"])
-            msg.append(f"[{row['county']}] {row['sitename']}：{row['predicted_aqi']:.0f} {status}")
+            status = get_aqi_status(row["avg_aqi"])
+            msg.append(f"{row['county']}：{row['avg_aqi']:.0f} {status}")
             
         reply_line_message(reply_token, "\n".join(msg))
         return
@@ -263,21 +264,22 @@ def handle_text_message(event: MessageEvent) -> None:
     # 3. 幫助指令與歡迎訊息
     elif text_msg in {"幫助", "指令", "功能表", "選單", "功能", "help", "commands", "menu", "options", "開始", "start", "hi", "你好", "您好", "hello", "哈囉", "嗨", "歡迎"}:
         help_msg = (
-            "【功能說明】\n"
+            "［功能表］\n"
             "官方網頁(電腦版)：https://mina030303-air-quality-monitoring-app-f3ksh1.streamlit.app/\n"
-            "１．全台概況：顯示空氣最好/最差縣市\n"
-            "２．未來趨勢：查詢未來 6 小時預報\n"
-            "３．目前選取：查詢目前選取的縣市\n"
-            "４．選取縣市：直接輸入縣市名稱（如：台北、桃園），會顯示所有測站清單\n"
-            "５．查詢：查詢目前選取縣市測站的最新預測\n"
-            "６．解除選取：輸入「取消」\n"
-            "７．功能表：輸入「功能表」或「選單」"
+            "１．選取縣市：請先直接輸入想查詢的縣市名稱（如：台北、桃園）\n"
+            "２．輸入「趨勢」：查詢選取的縣市未來 6 小時預測\n"
+            "３．輸入「查詢」：選擇欲查詢測站的最新 6 小時預測\n"
+            "４．輸入「概況」：顯示空氣最好/最差的前三縣市\n"
+            "５．輸入「選取」：查詢目前選取的縣市\n"
+            "６．輸入「取消」：解除目前選取的縣市\n"
+            "７．輸入「空氣品質分級」：查詢 AQI 分級標準\n"
+            "８．輸入「功能表」或「選單」：查詢功能表"
         )
         reply_line_message(reply_token, help_msg)
         return
     
     # 4. AQI分級查詢
-    elif text_msg in {"aqi分級", "aqi 分級", "aqi等級", "aqi標準", "aqi級距", "aqi說明", "空氣品質分級", "空氣品質標準"}:
+    elif text_msg in {"aqi分級", "aqi 分級", "aqi等級", "aqi標準", "aqi級距", "aqi說明", "空氣品質分級", "空氣品質標準", "AQI分級", "AQI等級", "AQI標準", "AQI級距", "AQI"}:
         aqi_guide = (
             "【AQI 分級標準】\n"
             "🟢 良好 / Green (0-50): 可正常進行戶外活動\n"
@@ -285,6 +287,27 @@ def handle_text_message(event: MessageEvent) -> None:
             "🔴 污染 / Red (101+): 已屬空氣污染，請減少戶外活動"
         )
         reply_line_message(reply_token, aqi_guide)
+        return
+
+    # 4-1. 預測查詢入口：先詢問要看縣市或測站
+    elif text_msg in {"預測", "預報"}:
+        items = [
+            QuickReplyItem(action=MessageAction(label="縣市", text="縣市")),
+            QuickReplyItem(action=MessageAction(label="測站", text="測站")),
+        ]
+        reply_line_message(
+            reply_token,
+            "請選擇要顯示的類型：縣市或測站。",
+            quick_reply=QuickReply(items=items),
+        )
+        return
+
+    # 4-2. 預測類型按鈕回應：提示正確關鍵字
+    elif text_msg == "縣市":
+        reply_line_message(reply_token, "請輸入正確關鍵字：「趨勢」")
+        return
+    elif text_msg == "測站":
+        reply_line_message(reply_token, "請輸入正確關鍵字：「查詢」")
         return
 
     # 5. 歧義判斷
@@ -329,7 +352,7 @@ def handle_text_message(event: MessageEvent) -> None:
             reply_line_message(reply_token, f"查無 {sitename} 未來預測數據。")
             return
             
-        msg = [f"【{sitename}】未來趨勢："]
+        msg = [f"【{sitename}】未來預測："]
         for _, row in df.iterrows():
             t = pd.to_datetime(row["forecast_time"]).strftime("%H:%M")
             aqi = row["predicted_aqi"]
@@ -366,38 +389,27 @@ def handle_text_message(event: MessageEvent) -> None:
         # 這裡正確設定了按鈕：使用者看到的是 sitename，點下去送出的是 "sitename"
         items = [QuickReplyItem(action=MessageAction(label=sn, text=f"趨勢:{sn}")) for sn in df["sitename"]]
         quick_reply = QuickReply(items=items[:13])  # LINE 最多 13 個按鈕
-        reply_line_message(reply_token, "請選擇要查詢未來 6 小時趨勢的測站：", quick_reply=quick_reply)
+        reply_line_message(reply_token, "請選擇要查詢未來 6 小時預測的測站：", quick_reply=quick_reply)
         return
     
-    if text_msg in {"趨勢", "未來趨勢", "未來"}:
+    if text_msg in {"趨勢", "未來趨勢", "未來", "縣市預測"}:
         county = get_user_subscription(line_user_id)
-        
-        if county:
-            # 有選縣市：查該縣市的「平均」趨勢
-            title = f"{county} 未來 6 小時趨勢"
-            query = text("""
-                SELECT f.forecast_time, AVG(f.predicted_aqi) AS avg_aqi
-                FROM public.forecast f
-                JOIN public.air_quality_stations s ON CAST(f.siteid AS TEXT) = CAST(s.siteid AS TEXT)
-                WHERE REPLACE(CAST(s.county AS TEXT), '台', '臺') = :county
-                  AND f.forecast_time >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Taipei')
-                GROUP BY f.forecast_time
-                ORDER BY f.forecast_time ASC
-                LIMIT 6
-            """)
-            params = {"county": county}
-        else:
-            # 未選縣市：查「全台」平均趨勢
-            title = "全台灣未來 6 小時趨勢"
-            query = text("""
-                SELECT forecast_time, AVG(predicted_aqi) AS avg_aqi
-                FROM public.forecast
-                WHERE forecast_time >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Taipei')
-                GROUP BY forecast_time
-                ORDER BY forecast_time ASC
-                LIMIT 6
-            """)
-            params = {}
+        if not county:
+            reply_line_message(reply_token, "尚未選取縣市，請先輸入縣市名稱（例如：台北、桃園）。")
+            return
+
+        title = f"{county} 未來 6 小時趨勢"
+        query = text("""
+            SELECT f.forecast_time, AVG(f.predicted_aqi) AS avg_aqi
+            FROM public.forecast f
+            JOIN public.air_quality_stations s ON CAST(f.siteid AS TEXT) = CAST(s.siteid AS TEXT)
+            WHERE REPLACE(CAST(s.county AS TEXT), '台', '臺') = :county
+              AND f.forecast_time >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Taipei')
+            GROUP BY f.forecast_time
+            ORDER BY f.forecast_time ASC
+            LIMIT 6
+        """)
+        params = {"county": county}
 
         with engine.connect() as conn:
             df = pd.read_sql_query(query, conn, params=params)
