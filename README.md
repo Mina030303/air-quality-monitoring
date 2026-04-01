@@ -1,78 +1,70 @@
 # Taiwan Air Quality Monitoring Platform
 
-An end-to-end AQI monitoring project for Taiwan: automated data ingestion, validation, analytics, and a multi-page Streamlit dashboard.
+An end-to-end air quality monitoring and forecasting project for Taiwan.
+It combines automated data ingestion, validation, analytics, machine learning, and user-facing delivery through a dashboard and LINE bot.
 
-## Highlights
+## Key Features
 
-- Reliable API ingestion from Taiwan MOENV datasets (`AQX_P_488`, `AQX_P_434`)
-- Data validation with Pydantic v2 (schema checks, datetime parsing, coordinate validation)
-- Hot + cold storage design
-  - Hot: CSV for fast dashboard access
-  - Cold: Neon PostgreSQL with pooled connections and UPSERT deduplication
-- Analytics modules
-  - Daily and monthly trends
-  - County analysis and risk scoring
-  - High-pollution hour ratio
-  - Pollution spike detection
-- Interactive Streamlit dashboard with Traditional Chinese/English toggle
-- Scheduled ETL updates via GitHub Actions (commit only on data change)
+- Automated AQI ingestion from Taiwan MOENV open data APIs
+- Data cleaning and schema validation for stable downstream analysis
+- Forecasting pipeline for short-term AQI prediction
+- Multi-page Streamlit dashboard for trend, county, risk, and spike analysis
+- LINE bot integration for county subscription, AQI lookup, and forecast queries
+- Scheduled ETL and updates with GitHub Actions
 
-## Repository Layout
+## Project Structure
 
-- `app.py`: Streamlit entry page
-- `main.py`: Data pipeline orchestration
-- `src/`: ingestion, validation, storage, prediction, analysis utilities
-- `pages/`: dashboard pages (trend, county analysis, risk, high-pollution hours, spikes)
-- `data/`: raw, processed, and latest AQI files
-- `output/`: generated tables and figures
+- `main.py`: pipeline orchestration entry point
+- `app.py`: Streamlit dashboard entry point
+- `src/`: data ingestion, cleaning, storage, prediction, and LINE bot services
+- `pages/`: dashboard page modules
+- `data/`: raw, processed, and latest AQI datasets
+- `models/`: trained model artifacts
+- `output/`: generated analysis tables and figures
+
+## Tech Stack (Brief)
+
+- Core: Python, Pandas, Requests
+- Visualization and app: Streamlit, Altair, Matplotlib
+- ML: scikit-learn, XGBoost, LightGBM, Joblib
+- Backend and integration: Flask, line-bot-sdk, SQLAlchemy, PostgreSQL (psycopg2)
+- Data quality and config: Pydantic v2, python-dotenv, Tenacity
+- Automation: GitHub Actions
 
 ## Quick Start
 
-1. Clone and enter the project:
-
-```bash
-git clone https://github.com/Mina030303/air-quality-monitoring.git
-cd air_quality_monitoring_platform
-```
-
+1. Clone this repository.
 2. Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Add environment variables in `.env`:
+3. Create a `.env` file:
 
 ```env
 API_KEY=your_moenv_api_key
-# Optional:
-# DATABASE_URL=your_neon_postgresql_url
+LINE_CHANNEL_ACCESS_TOKEN=your_line_token
+LINE_CHANNEL_SECRET=your_line_secret
+DATABASE_URL=your_postgresql_url
 ```
 
-4. Run pipeline (recommended before dashboard):
+4. Run the pipeline:
 
 ```bash
 python main.py
 ```
 
-5. Start dashboard:
+5. Launch the dashboard:
 
 ```bash
 streamlit run app.py
 ```
 
-## Data Outputs
+## Output Artifacts
 
-- Latest snapshots: `data/hourly_aqi.csv`, `data/daily_aqi.csv`
-- Clean baselines: `data/processed/hourly_clean.csv`, `data/processed/daily_clean.csv`
-- Analysis results: `output/tables/`, `output/figures/`
-
-## Tech Stack
-
-- Python, Pandas, Requests
-- Streamlit, Altair, Matplotlib
-- Pydantic v2, python-dotenv
-- PostgreSQL (psycopg2)
-- GitHub Actions
+- Latest AQI snapshots in `data/`
+- Processed datasets in `data/processed/`
+- Analytical tables and figures in `output/`
 
 
