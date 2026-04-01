@@ -1,3 +1,4 @@
+python=3.10
 pandas
 matplotlib
 jupyter
@@ -6,6 +7,7 @@ requests
 streamlit
 altair
 flask
+gunicorn
 line-bot-sdk>=3.0.0
 python-dotenv
 pydantic>=2.0.0

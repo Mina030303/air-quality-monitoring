@@ -2,6 +2,7 @@ from __future__ import annotations
 import logging
 import os
 import gc  # 記憶體垃圾回收工具
+import numpy as np
 from pathlib import Path
 import joblib
 import pandas as pd

@@ -347,7 +347,7 @@ def handle_text_message(event: MessageEvent) -> None:
         return
 
     # 8. 查詢與未來趨勢 (觸發測站 QuickReply 按鈕)
-    if text_msg in {"查詢", "查詢預測", "未來趨勢", "趨勢", "未來"} or text_msg_lower == "current prediction":
+    if text_msg in {"查詢", "查詢預測"} or text_msg_lower == "current prediction":
         county = get_user_subscription(line_user_id)
         if not county:
             reply_line_message(reply_token, "尚未選取，請先傳送縣市名稱（例如：台北、桃園）。")
@@ -369,10 +369,59 @@ def handle_text_message(event: MessageEvent) -> None:
             reply_line_message(reply_token, f"查無 {county} 測站清單。")
             return
             
-        # 這裡正確設定了按鈕：使用者看到的是 sitename，點下去送出的是 "趨勢:sitename"
+        # 這裡正確設定了按鈕：使用者看到的是 sitename，點下去送出的是 "sitename"
         items = [QuickReplyItem(action=MessageAction(label=sn, text=f"趨勢:{sn}")) for sn in df["sitename"]]
         quick_reply = QuickReply(items=items[:13])  # LINE 最多 13 個按鈕
         reply_line_message(reply_token, "請選擇要查詢未來 6 小時趨勢的測站：", quick_reply=quick_reply)
+        return
+    
+    if text_msg in {"趨勢", "未來趨勢", "未來"}:
+        county = get_user_subscription(line_user_id)
+        
+        if county:
+            # 有選縣市：查該縣市的「平均」趨勢
+            title = f"{county} 未來 6 小時趨勢"
+            query = text("""
+                SELECT f.forecast_time, AVG(f.predicted_aqi) AS avg_aqi
+                FROM public.forecast f
+                JOIN public.air_quality_stations s ON CAST(f.siteid AS TEXT) = CAST(s.siteid AS TEXT)
+                WHERE REPLACE(CAST(s.county AS TEXT), '台', '臺') = :county
+                  AND f.forecast_time >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Taipei')
+                GROUP BY f.forecast_time
+                ORDER BY f.forecast_time ASC
+                LIMIT 6
+            """)
+            params = {"county": county}
+        else:
+            # 未選縣市：查「全台」平均趨勢
+            title = "全台灣未來 6 小時趨勢"
+            query = text("""
+                SELECT forecast_time, AVG(predicted_aqi) AS avg_aqi
+                FROM public.forecast
+                WHERE forecast_time >= (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Taipei')
+                GROUP BY forecast_time
+                ORDER BY forecast_time ASC
+                LIMIT 6
+            """)
+            params = {}
+
+        with engine.connect() as conn:
+            df = pd.read_sql_query(query, conn, params=params)
+
+        if df.empty:
+            reply_line_message(reply_token, "查無預測趨勢數據。")
+            return
+
+        msg = [title]
+        for _, row in df.iterrows():
+            t = pd.to_datetime(row["forecast_time"]).strftime("%H:%M")
+            aqi = row["avg_aqi"]
+            status = get_aqi_status(aqi)
+            icon = status.split()[0] if status else "⚪"
+            msg.append(f"{t} - {aqi:.0f} {icon}")
+
+        reply_line_message(reply_token, "\n".join(msg))
+
         return
 
     # 9. 選取縣市邏輯 (處理一般縣市輸入)
@@ -409,8 +458,9 @@ def handle_text_message(event: MessageEvent) -> None:
 
 def main() -> None:
     ensure_tables()
-    # 啟動 Flask 伺服器
-    app.run(host="0.0.0.0", port=5000)
+    port = int(os.getenv("PORT", "5000"))
+    # 本機開發可直接用 python 啟動；Render 正式環境請使用 gunicorn 啟動 app
+    app.run(host="0.0.0.0", port=port)
 
 if __name__ == "__main__":
     main()

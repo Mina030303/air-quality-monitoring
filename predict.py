@@ -27,7 +27,7 @@ def load_inference_context(db_url: str):
     engine = create_engine(db_url)
     with engine.connect() as conn:
         return pd.read_sql_query(query, conn)
-
+    
 def main():
     load_dotenv(BASE_DIR / ".env")
     db_url = os.getenv("DATABASE_URL")
