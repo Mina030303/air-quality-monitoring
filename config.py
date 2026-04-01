@@ -69,10 +69,15 @@ TEXT = {
         "county_high_pol_ratio": "高污染比例",
         # pages/county_analysis.py
         "county_total_count": "觀測總數",
+        "county_page_intro": "本頁面以平均 AQI、波動度與高污染比例，綜合比較各縣市的空氣品質特性與穩定度。",
+        "county_how_to_read_body": "可先看氣泡圖掌握整體分布，再切換到單一指標與完整資料表深入比較。",
         "county_overall_insight_title": "綜合解讀",
         "county_overall_insight_body": "右上角且圓較大的縣市，表示不僅平均污染程度較高，變動也較劇烈，且高污染事件發生頻率高，屬於整體風險最高的區域。 相對地，左下角且圓較小的縣市，代表空氣品質穩定且較少出現高污染情況。",
         "county_high_risk_label": "較需注意的縣市",
         "county_good_label": "表現較穩定的縣市",
+        "county_zh": "縣市（中文）",
+        "county_en": "縣市（英文）",
+        "county_abbrev": "縮寫",
         "no_data": "無明顯分類結果",
         # app.py (home)
         "home_title": "台灣空氣品質儀表板",
@@ -270,10 +275,15 @@ TEXT = {
         "county_high_pol_ratio": "High Pollution Ratio",
         # pages/county_analysis.py
         "county_total_count": "Total Observations",
+        "county_page_intro": "This page compares county-level air quality using mean AQI, volatility, and high-pollution ratio.",
+        "county_how_to_read_body": "Start with the bubble overview, then switch to single metrics and the full data table for deeper comparison.",
         "county_overall_insight_title": "Interpretation",
         "county_overall_insight_body": "Regions located in the upper-right with larger circles indicate not only higher average pollution but also greater variability and more frequent high pollution events, representing the highest overall risk. In contrast, regions in the lower-left with smaller circles indicate stable and generally clean air conditions.",
         "county_high_risk_label": "Regions currently requiring more attention",
         "county_good_label": "Regions currently showing more stable performance",
+        "county_zh": "County (ZH)",
+        "county_en": "County (EN)",
+        "county_abbrev": "Abbreviation",
         "no_data": "No clear group identified",
         # app.py (home)
         "home_title": "Taiwan Air Quality Dashboard",
